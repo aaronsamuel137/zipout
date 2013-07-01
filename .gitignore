@@ -1,2 +1,7 @@
 *.class
 avian/
+.DS_Store
+.project
+.settings/
+bin/
+.classpath
