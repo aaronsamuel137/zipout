@@ -33,8 +33,9 @@ public class ZipOutputStream extends DeflaterOutputStream{
   }
   
   public void putNextEntry(ZipEntry z) {
-    
+    ensureOpen();
   }
+  
   public void closeEntry() {
     
   }
