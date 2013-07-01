@@ -1,5 +1,6 @@
-import java.io.*;
-import java.util.zip.*;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.util.zip.ZipEntry;
 
 // Our code must be able to do this
 public class JavaZip

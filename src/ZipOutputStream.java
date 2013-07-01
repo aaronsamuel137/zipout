@@ -1,18 +1,35 @@
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.zip.DeflaterOutputStream;
 
 
 public class ZipOutputStream extends DeflaterOutputStream{
   //private static final int SIGNATURE = 0x04034b50;
+
   byte[] SIGNATURE = { 0x50, 0x4B, 0x03, 0x04 };
   byte[] RANDOM_BYTES = { 0x2, 0x3 };
   private OutputStream out;
   byte[] data;
+  int offset;
   
   public ZipOutputStream(OutputStream out) {
-      //super(out, new Deflater(Deflater.DEFAULT_COMPRESSION, true));
-      super(out);
+    //super(out, new Deflater(Deflater.DEFAULT_COMPRESSION, true));
+    super(out);
+    offset = 0;
+    
+    
+  }
+  
+  public void putNextEntry(ZipEntry z) {
+    
+  }
+  public void closeEntry() {
+    
   }
   
   private void writeLocalHeader(int offset) {
@@ -26,14 +43,18 @@ public class ZipOutputStream extends DeflaterOutputStream{
   }
 
   private void writeFileData() {
-      
+    
   }
+  
+
 
   private void writeDataDescriptor() {
       
   }
   
-  static private byte[] littleEndian(byte[] bytes) {
+
+  
+  static byte[] littleEndian(byte[] bytes) {
     int length = bytes.length;
     byte[] newBytes = new byte[length];
     for (int i = 0 ; i < length ; i++)
@@ -41,16 +62,13 @@ public class ZipOutputStream extends DeflaterOutputStream{
     return newBytes;
   }
   
-  public static void main(String[] args) {
-    byte[] myBytes = {(byte)0x23, (byte)0x4f, (byte)0x21, (byte)0x7e};
-    for (byte b : myBytes)
-    {
-      System.out.println((byte)b);
-    }
-    myBytes = littleEndian(myBytes);
-    for (byte b : myBytes)
-    {
-    	System.out.println((byte)b);
+  public void close() {
+    try {
+      super.close();
+    } catch (IOException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
     }
   }
+  
 }
