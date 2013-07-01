@@ -26,7 +26,7 @@ public class ZipOutputStream extends DeflaterOutputStream{
   }
 
   private void writeFileData() {
-
+      
   }
 
   private void writeDataDescriptor() {
@@ -45,12 +45,12 @@ public class ZipOutputStream extends DeflaterOutputStream{
     byte[] myBytes = {(byte)0x23, (byte)0x4f, (byte)0x21, (byte)0x7e};
     for (byte b : myBytes)
     {
-        System.out.println((byte)b);
+      System.out.println((byte)b);
     }
     myBytes = littleEndian(myBytes);
     for (byte b : myBytes)
     {
-        System.out.println((byte)b);
+    	System.out.println((byte)b);
     }
   }
 }
