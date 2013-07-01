@@ -8,7 +8,7 @@
    There is NO WARRANTY for this software.  See license.txt for
    details. */
 
-import Calendar.java;
+import MyCalendar.java;
 
 public static class ZipEntry {
   //Minimum version needed to extract the file(s) from a compressed state
@@ -56,6 +56,40 @@ public static class ZipEntry {
   public int getSize() {
     return UNCOMP_SIZE;
   }
+  
+  //Method to get the time frome the system
+  public void setTime(){
+	  //Need to expand on this....
+    
+  }
+  
+  //Method to set the mi
+  
+  //Method to set the minium version required to open the zip file
+  //Valid values for the compression method are the numbers 10 to 63
+  public bool setRequiredVersion(int compMethod){
+	  if (compMethod < 10 || compMethod > 63){
+		  return false;
+	  }
+	  else{
+		  COMPRESSION_METHOD = compMethod;
+		  return true;
+	  }
+  }
+  
+  //Method to set the compression method for the file
+  //Valid values for the compression method are the numbers 0 to 19
+  public bool setCompressionMethod(int compMethod){
+	  if (compMethod < 0 || compMethod > 19){
+		  return false;
+	  }
+	  else{
+		  COMPRESSION_METHOD = compMethod;
+		  return true;
+	  }
+  }
+  
+  //
 
   
 }
