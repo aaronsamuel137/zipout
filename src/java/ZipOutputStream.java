@@ -11,18 +11,25 @@ import java.util.zip.DeflaterOutputStream;
 public class ZipOutputStream extends DeflaterOutputStream{
   //private static final int SIGNATURE = 0x04034b50;
 
-  byte[] SIGNATURE = { 0x50, 0x4B, 0x03, 0x04 };
-  byte[] RANDOM_BYTES = { 0x2, 0x3 };
+  private byte[] SIGNATURE = { 0x50, 0x4B, 0x03, 0x04 };
+  private byte[] RANDOM_BYTES = { 0x2, 0x3 };
   private OutputStream out;
-  byte[] data;
-  int offset;
-  
+  private byte[] data;
+  private int offset;
+  private boolean closed = false;
+
   public ZipOutputStream(OutputStream out) {
     //super(out, new Deflater(Deflater.DEFAULT_COMPRESSION, true));
     super(out);
     offset = 0;
     
     
+  }
+
+  private void ensureOpen() throws IOException {
+    if (closed) {
+      throw new IOException("Closed");
+    }
   }
   
   public void putNextEntry(ZipEntry z) {
