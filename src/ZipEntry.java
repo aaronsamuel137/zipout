@@ -9,9 +9,6 @@ public class ZipEntry {
   
   //Method used to compress file
   private static short COMPRESSION_METHOD;
-	
-  //Utilize Calendar class to determine time/date of modification
-  private static Calendar LAST_MOD;
   
   //Format of date and time are both 2 byte fields
   private static short MOD_TIME;
@@ -56,20 +53,24 @@ public class ZipEntry {
   
   //Method to get the time frome the system
   public void setTimeDate(){
-	  //Create Date and Calendar objects to populate information
-	  Date modTime = new Date();
+	  final int DAY_OF_MONTH = 5;
+	  final int HOUR_OF_DAY = 11;
+	  final int MINUTE = 12;
+	  final int MONTH = 2;
+	  final int SECOND = 13;
+	  final int YEAR = 1;
 	  
-	  
-	  MyCalendar modCalendar = new MyCalendar(modTime.getTime());
+	  //Create Calendar object
+	  Calendar modCalendar = Calendar.getInstance();
 	  
 	  //Hour is military time
-	  int timeBits = (modCalendar.HOUR_OF_DAY);
+	  int timeBits = modCalendar.get(HOUR_OF_DAY);
 	  
 	  //Shift bits
 	  timeBits = timeBits << 6;
 	  
 	 //Get the minutes from MyCalendar
-	  int minBits = modCalendar.DAY_OF_MONTH;
+	  int minBits = modCalendar.get(MONTH);
 	  
 	  //Mask all but the last 6 bits of minutes
 	  int minMask = 0xFFC0;
@@ -82,7 +83,7 @@ public class ZipEntry {
 	  timeBits = timeBits << 5;
 	  
 	  //Get the seconds from MyCalendar
-	  int secBits = modCalendar.SECOND;
+	  int secBits = modCalendar.get(SECOND);
 	  
 	  //Divide seconds by 2
 	  secBits = secBits >> 1;
@@ -98,19 +99,19 @@ public class ZipEntry {
 	  this.MOD_TIME = (short)timeBits;
 	  
 	  //Year is based on offset from 1980
-	  int dateBits = (modCalendar.YEAR -1980);
+	  int dateBits = (modCalendar.get(YEAR) -1980);
 	  
 	  //Shift bits over
 	  dateBits = dateBits << 4;
 	  
 	  //Get month from MyCalendar, Jan starts as "0"
-	  dateBits = dateBits & (byte)(modCalendar.MONTH -1);
+	  dateBits = dateBits & (byte)(modCalendar.get(MONTH) -1);
 	  
 	  //Shift bits over again
 	  dateBits = dateBits << 5;
 	  
 	  //Get the day from MyCalendar
-	  int dayBits = modCalendar.DAY_OF_MONTH;
+	  int dayBits = modCalendar.get(DAY_OF_MONTH);
 	  
 	  //Mask all but the last 5 bits of day
 	  int dayMask = 0xFFE0;
