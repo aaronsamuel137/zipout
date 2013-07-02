@@ -9,8 +9,9 @@ import java.util.zip.DeflaterOutputStream;
 public class ZipOutputStream extends DeflaterOutputStream{
   private static final int SIGNATURE = 0x04034b50;
   private static final short VERSION = 20;
-  private static final short BITFLAG = 8;
+  private static final short BITFLAG = 0x0808;
   private static final short METHOD = 8;
+  
   
   private final OutputStream out;
   //private final Deflater deflater = null;
@@ -53,16 +54,13 @@ public class ZipOutputStream extends DeflaterOutputStream{
   
   private void writeLocalHeader(ZipEntry entry) {
     writeFourBytes(SIGNATURE);
-    //writeTwoBytes(VERSION);
-    //writeTwoBytes(BITFLAG);
-    //writeTwoBytes(METHOD);
+    writeTwoBytes(VERSION);
+    writeTwoBytes(BITFLAG);
+    writeTwoBytes(METHOD);
     
-    // for testing we need 30 byte headers
-    /*writeFourBytes(0x1234);
-    writeFourBytes(0x1234);
-    writeFourBytes(0x1234);
-    writeFourBytes(0x1234);
-    writeFourBytes(0x1234);*/
+    for (int i = 0 ; i < 5 ; i++) {
+      writeFourBytes(0);
+    }
   }
 
   private void writeFileData() {
@@ -86,10 +84,10 @@ public class ZipOutputStream extends DeflaterOutputStream{
   }
   
   public void close() {
+    // call super.close
     try {
       super.close();
     } catch (IOException e) {
-      // TODO Auto-generated catch block
       e.printStackTrace();
     }
   }
