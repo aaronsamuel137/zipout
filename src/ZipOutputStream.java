@@ -56,8 +56,9 @@ public class ZipOutputStream extends DeflaterOutputStream{
     try {
       ensureOpen();
       System.out.println(currentEntry.entry.getName());
-      writeCentralDirectoryHeader(currentEntry);
+      //writeCentralDirectoryHeader(currentEntry);
       crc.reset();
+      deflaterStream.close();
     } catch (IOException e) {}
   }
   
@@ -79,6 +80,7 @@ public class ZipOutputStream extends DeflaterOutputStream{
       deflaterStream.write(b, offset, length);
       bytesWritten += length;
       crc.update(b, offset, length);
+      deflaterStream.close();
     } catch (IOException e) {
       // TODO Auto-generated catch block
       e.printStackTrace();
@@ -123,29 +125,8 @@ public class ZipOutputStream extends DeflaterOutputStream{
     }
   }
   
-  private void writeName(String name) {
-    
-  }
-    
-  
-
-  
-  static byte[] littleEndian(byte[] bytes) {
-    int length = bytes.length;
-    byte[] newBytes = new byte[length];
-    for (int i = 0 ; i < length ; i++)
-      newBytes[length - i - 1] = bytes[i];
-    return newBytes;
-  }
-  
   public void close() {
     // call super.close
-    try {
-      // super.close();
-      deflaterStream.close();
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
   }
   
   private void writeTwoBytes(int bytes) {
