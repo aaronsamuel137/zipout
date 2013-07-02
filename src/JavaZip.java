@@ -38,7 +38,6 @@ public class JavaZip
 			ZipEntry entry = new ZipEntry("test.txt");
 			outZip.putNextEntry(entry);
 			
-			System.out.println("next");
 			int len = 0;
 			while ((len = inFile.read(buffer)) > 0)
 			{
@@ -68,5 +67,9 @@ public class JavaZip
 	  } catch (IOException e) {
 	    System.out.println("No test file");
 	  }
+	}
+	
+	public static void readBytesFromZip () {
+	  
 	}
 }

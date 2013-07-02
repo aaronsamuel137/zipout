@@ -25,7 +25,8 @@ public class ZipOutputStream extends DeflaterOutputStream{
   public ZipOutputStream(OutputStream outStream) {
     //super(out, new Deflater(Deflater.DEFAULT_COMPRESSION, true));
     super(outStream);
-    out = new BufferedOutputStream(outStream);
+    out = outStream;
+    //out = new BufferedOutputStream(outStream);
     System.out.println(out); 
     offset = 0;
   }
@@ -37,7 +38,6 @@ public class ZipOutputStream extends DeflaterOutputStream{
   }
   
   public void putNextEntry(ZipEntry z) {
-    System.out.println("Here");
     try {
       ensureOpen();
       writeLocalHeader(z);
@@ -52,7 +52,6 @@ public class ZipOutputStream extends DeflaterOutputStream{
   }
   
   private void writeLocalHeader(ZipEntry entry) {
-    System.out.println("Here");
     writeFourBytes(SIGNATURE);
     //writeTwoBytes(VERSION);
     //writeTwoBytes(BITFLAG);
@@ -108,14 +107,15 @@ public class ZipOutputStream extends DeflaterOutputStream{
   
   private void writeFourBytes(int bytes) {
     //OutputStream out = new ByteArrayOutputStream();
-    OutputStream out = this.out;
+    //OutputStream out = this.out;
     try {
-      out.write(bytes);
       out.write(bytes & 0xff);
       out.write((bytes >> 8) & 0xff);
       out.write((bytes >> 16) & 0xff);
       out.write((bytes >> 24) & 0xff);
-    } catch (IOException e) {}
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
   }
   
 }
