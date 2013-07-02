@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.zip.CRC32;
 import java.util.zip.DeflaterOutputStream;
 
 public class ZipOutputStream extends DeflaterOutputStream{
@@ -17,6 +18,8 @@ public class ZipOutputStream extends DeflaterOutputStream{
   private final OutputStream out;
   private DeflaterOutputStream deflaterStream;
   private List<EntryOffset> entries;
+  private CRC32 crc = new CRC32();
+  private EntryOffset currentEntry;
   
   private long bytesWritten;
   private boolean closed = false;
@@ -39,6 +42,7 @@ public class ZipOutputStream extends DeflaterOutputStream{
     try {
       ensureOpen();
       EntryOffset entry = new EntryOffset(bytesWritten, z);
+      currentEntry = entry;
       entries.add(entry);
       writeLocalHeader(z);
     } catch (IOException e) {
@@ -50,6 +54,8 @@ public class ZipOutputStream extends DeflaterOutputStream{
   public void closeEntry() {
     try {
       ensureOpen();
+      writeCentralDirectoryHeader(currentEntry);
+      crc.reset();
     } catch (IOException e) {}
   }
   
@@ -69,6 +75,7 @@ public class ZipOutputStream extends DeflaterOutputStream{
     try {
       deflaterStream.write(b, offset, length);
       bytesWritten += length;
+      crc.update(b, offset, length);
     } catch (IOException e) {
       // TODO Auto-generated catch block
       e.printStackTrace();
@@ -79,13 +86,38 @@ public class ZipOutputStream extends DeflaterOutputStream{
     // not needed yet
   }
   
-  private void writeCentralDirectoryHeader() {
+  private void writeCentralDirectoryHeader(EntryOffset e) {
     writeFourBytes(CENTRAL_FILE_HEADER);
     writeTwoBytes(VERSION);
     writeTwoBytes(VERSION);
     writeTwoBytes(BITFLAG);
     writeTwoBytes(METHOD);
+    
+    writeFourBytes(0); // last mod time
+    
+    writeFourBytes((int)crc.getValue());
+    
+    // place holder for size and compressed size
+    for (int i = 0 ; i < 2 ; i++) {
+      writeFourBytes(0);
+    }
+    
+    // file name length
+    writeTwoBytes(e.entry.getName().length() * 2);
+    
+    writeTwoBytes(0); // extra field length is 0 since we didn't use
+    writeTwoBytes(0); // comment length is 0 too
+    writeTwoBytes(0); // disk number start?
+    writeTwoBytes(0); // internal file attribute
+    writeFourBytes(0); // external file attribute
+    writeFourBytes((int) e.offset); // relative offset of local header
+    writeName(e.entry.getName());
   }
+  
+  private void writeName(String name) {
+    //TODO
+  }
+    
   
 
   
