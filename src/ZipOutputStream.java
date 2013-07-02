@@ -75,6 +75,7 @@ public class ZipOutputStream extends DeflaterOutputStream{
   
   public void write(byte[] b, int offset, int length) {
     try {
+      System.out.println("length is " + length);
       deflaterStream.write(b, offset, length);
       bytesWritten += length;
       crc.update(b, offset, length);
@@ -140,7 +141,8 @@ public class ZipOutputStream extends DeflaterOutputStream{
   public void close() {
     // call super.close
     try {
-      super.close();
+      // super.close();
+      deflaterStream.close();
     } catch (IOException e) {
       e.printStackTrace();
     }
