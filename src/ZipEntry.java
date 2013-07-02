@@ -96,7 +96,7 @@ public class ZipEntry {
 	  timeBits = timeBits ^ secBits;
 	  
 	  //Truncate to short then store
-	  this.MOD_TIME = (short)timeBits;
+	  MOD_TIME = (short)timeBits;
 	  
 	  //Year is based on offset from 1980
 	  int dateBits = (modCalendar.get(YEAR) -1980);
