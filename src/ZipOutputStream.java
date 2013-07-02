@@ -1,9 +1,9 @@
 
 
-import java.io.BufferedOutputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.zip.DeflaterOutputStream;
 
 public class ZipOutputStream extends DeflaterOutputStream{
@@ -11,25 +11,22 @@ public class ZipOutputStream extends DeflaterOutputStream{
   private static final short VERSION = 20;
   private static final short BITFLAG = 0x0808;
   private static final short METHOD = 8;
+  private static final int CENTRAL_FILE_HEADER = 0x02014b50;
   
   
   private final OutputStream out;
-  //private final Deflater deflater = null;
-  //private final byte[] buffer = null;
+  private DeflaterOutputStream deflaterStream;
+  private List<EntryOffset> entries;
   
-
-  //private byte[] SIGNATURE = { 0x50, 0x4B, 0x03, 0x04 };
-  //private byte[] RANDOM_BYTES = { 0x2, 0x3 };
-  private int offset;
+  private long bytesWritten;
   private boolean closed = false;
 
   public ZipOutputStream(OutputStream outStream) {
-    //super(out, new Deflater(Deflater.DEFAULT_COMPRESSION, true));
     super(outStream);
     out = outStream;
-    //out = new BufferedOutputStream(outStream);
-    System.out.println(out); 
-    offset = 0;
+    bytesWritten = 0;
+    entries = new ArrayList<EntryOffset>();
+    deflaterStream = new DeflaterOutputStream(outStream);
   }
 
   private void ensureOpen() throws IOException {
@@ -41,6 +38,8 @@ public class ZipOutputStream extends DeflaterOutputStream{
   public void putNextEntry(ZipEntry z) {
     try {
       ensureOpen();
+      EntryOffset entry = new EntryOffset(bytesWritten, z);
+      entries.add(entry);
       writeLocalHeader(z);
     } catch (IOException e) {
       // TODO Auto-generated catch block
@@ -49,7 +48,9 @@ public class ZipOutputStream extends DeflaterOutputStream{
   }
   
   public void closeEntry() {
-    
+    try {
+      ensureOpen();
+    } catch (IOException e) {}
   }
   
   private void writeLocalHeader(ZipEntry entry) {
@@ -61,16 +62,29 @@ public class ZipOutputStream extends DeflaterOutputStream{
     for (int i = 0 ; i < 5 ; i++) {
       writeFourBytes(0);
     }
-  }
-
-  private void writeFileData() {
-    
+    bytesWritten += 30;
   }
   
-
+  public void write(byte[] b, int offset, int length) {
+    try {
+      deflaterStream.write(b, offset, length);
+      bytesWritten += length;
+    } catch (IOException e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }
+  }
 
   private void writeDataDescriptor() {
-      
+    // not needed yet
+  }
+  
+  private void writeCentralDirectoryHeader() {
+    writeFourBytes(CENTRAL_FILE_HEADER);
+    writeTwoBytes(VERSION);
+    writeTwoBytes(VERSION);
+    writeTwoBytes(BITFLAG);
+    writeTwoBytes(METHOD);
   }
   
 
@@ -93,7 +107,6 @@ public class ZipOutputStream extends DeflaterOutputStream{
   }
   
   private void writeTwoBytes(int bytes) {
-    OutputStream out = this.out;
     try {
       out.write(bytes & 0xff);
       out.write((bytes >> 8) & 0xff);
@@ -113,6 +126,15 @@ public class ZipOutputStream extends DeflaterOutputStream{
       out.write((bytes >> 24) & 0xff);
     } catch (IOException e) {
       e.printStackTrace();
+    }
+  }
+  
+  private class EntryOffset {
+    public long offset;
+    public ZipEntry entry;
+    public EntryOffset(long off, ZipEntry e) {
+      this.offset = off;
+      this.entry = e;
     }
   }
   

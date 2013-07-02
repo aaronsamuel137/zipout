@@ -17,8 +17,12 @@ public class JavaZip
 		byte[] buffer = new byte[1024];
 		String workingDir = System.getProperty("user.dir");
 		File testFile = new File(workingDir, "test.txt");
-		if (!testFile.exists())
-		  writeTestFile(testFile);
+		if (testFile.exists())
+		  try {
+		    testFile.delete();
+		  } catch (Exception e) {}
+		  
+		writeTestFile(testFile);
 		
 		File outputFile = new File(workingDir, "java.zip");
 		if (outputFile.exists()) {
@@ -42,6 +46,9 @@ public class JavaZip
 			while ((len = inFile.read(buffer)) > 0)
 			{
 				outZip.write(buffer, 0, len);
+				for (byte b : buffer)
+				  if (b != 0)
+				    System.out.println(Integer.toHexString(b));
 			}
 
 			inFile.close();
@@ -62,7 +69,7 @@ public class JavaZip
   
       FileWriter fw = new FileWriter(file.getAbsoluteFile());
       BufferedWriter bw = new BufferedWriter(fw);
-      bw.write("This is the test file content!");
+      bw.write("this is a test");
       bw.close();
 	  } catch (IOException e) {
 	    System.out.println("No test file");
