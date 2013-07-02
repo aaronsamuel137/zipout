@@ -2,6 +2,7 @@
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.zip.CRC32;
@@ -111,11 +112,17 @@ public class ZipOutputStream extends DeflaterOutputStream{
     writeTwoBytes(0); // internal file attribute
     writeFourBytes(0); // external file attribute
     writeFourBytes((int) e.offset); // relative offset of local header
-    writeName(e.entry.getName());
+    
+    try {
+      byte[] bytes = e.entry.getName().getBytes("UTF-8");
+      deflaterStream.write(bytes, 0, bytes.length);
+    } catch (Exception ex) {
+      System.out.println("Unsupported byte encoding");
+    }
   }
   
   private void writeName(String name) {
-    //TODO
+    
   }
     
   
