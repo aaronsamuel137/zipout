@@ -46,9 +46,9 @@ public class JavaZip
 			while ((len = inFile.read(buffer)) > 0)
 			{
 				outZip.write(buffer, 0, len);
-				for (byte b : buffer)
-				  if (b != 0)
-				    System.out.println(Integer.toHexString(b));
+				//for (byte b : buffer)
+				  //if (b != 0)
+				    //System.out.println(Integer.toHexString(b));
 			}
 
 			inFile.close();

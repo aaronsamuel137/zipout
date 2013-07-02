@@ -7,8 +7,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.zip.CRC32;
 import java.util.zip.DeflaterOutputStream;
+import java.util.zip.Deflater;
 
-public class ZipOutputStream extends DeflaterOutputStream{
+public class ZipOutputStream {
   private static final int SIGNATURE = 0x04034b50;
   private static final short VERSION = 20;
   private static final short BITFLAG = 0x0808;
@@ -18,19 +19,23 @@ public class ZipOutputStream extends DeflaterOutputStream{
   
   private final OutputStream out;
   private DeflaterOutputStream deflaterStream;
+  private Deflater deflater = null;
   private List<EntryOffset> entries;
   private CRC32 crc = new CRC32();
   private EntryOffset currentEntry;
   
   private long bytesWritten;
   private boolean closed = false;
+  private byte[] buffer;
 
   public ZipOutputStream(OutputStream outStream) {
-    super(outStream);
+    //super(outStream);
     out = outStream;
     bytesWritten = 0;
     entries = new ArrayList<EntryOffset>();
-    deflaterStream = new DeflaterOutputStream(outStream);
+    //deflaterStream = new DeflaterOutputStream(outStream);
+    deflater = new Deflater();
+    buffer = new byte[1024 * 4];
   }
 
   private void ensureOpen() throws IOException {
@@ -55,36 +60,59 @@ public class ZipOutputStream extends DeflaterOutputStream{
   public void closeEntry() {
     try {
       ensureOpen();
-      System.out.println(currentEntry.entry.getName());
-      //writeCentralDirectoryHeader(currentEntry);
+      writeCentralDirectoryHeader(currentEntry);
       crc.reset();
-      deflaterStream.close();
+      //deflaterStream.close();
     } catch (IOException e) {}
   }
   
-  private void writeLocalHeader(ZipEntry entry) {
+  private void writeLocalHeader(ZipEntry e) {
     writeFourBytes(SIGNATURE);
     writeTwoBytes(VERSION);
     writeTwoBytes(BITFLAG);
     writeTwoBytes(METHOD);
-    
-    for (int i = 0 ; i < 5 ; i++) {
-      writeFourBytes(0);
-    }
-    bytesWritten += 30;
+
+    writeTwoBytes(e.modTime);
+    writeTwoBytes(e.modDate);
+
+    // CRC is 0 for local header
+    writeFourBytes(0);
+    writeFourBytes(0);
+
+    writeFourBytes(e.compSize);
+    writeFourBytes(e.uncompSize);
+
+    writeTwoBytes(e.name.length());
+    writeTwoBytes(0); //extra field length, 0 for default
+
+    int len = writeVariableByteLength(e.getName());
+
+    bytesWritten += 34 + len;
   }
   
   public void write(byte[] b, int offset, int length) {
     try {
-      System.out.println("length is " + length);
-      deflaterStream.write(b, offset, length);
+      deflater = new Deflater();
+      deflater.setInput(b, offset, length);
+      while (deflater.getRemaining() > 0)
+        deflate();      
+      deflater.finish();
+      while (!deflater.finished())
+        deflate();
+      deflater.dispose();
+      //super.write(b, offset, length);
       bytesWritten += length;
       crc.update(b, offset, length);
-      deflaterStream.close();
     } catch (IOException e) {
       // TODO Auto-generated catch block
       e.printStackTrace();
     }
+  }
+
+  private void deflate() throws IOException {
+    int len = deflater.deflate(buffer, 0, buffer.length);
+    if (len > 0)
+      out.write(buffer, 0 , len);
   }
 
   private void writeDataDescriptor() {
@@ -117,12 +145,7 @@ public class ZipOutputStream extends DeflaterOutputStream{
     writeFourBytes(0); // external file attribute
     writeFourBytes((int) e.offset); // relative offset of local header
     
-    try {
-      byte[] bytes = e.entry.getName().getBytes("UTF-8");
-      deflaterStream.write(bytes, 0, bytes.length);
-    } catch (Exception ex) {
-      System.out.println("Unsupported byte encoding");
-    }
+    
   }
   
   public void close() {
@@ -150,6 +173,17 @@ public class ZipOutputStream extends DeflaterOutputStream{
     } catch (IOException e) {
       e.printStackTrace();
     }
+  }
+
+  private int writeVariableByteLength(String text) {
+    try {
+      byte[] bytes = text.getBytes("UTF-8");
+      out.write(bytes, 0, bytes.length);
+      return bytes.length;
+    } catch (Exception ex) {
+      System.out.println("Unsupported byte encoding");
+    }
+    return 0;
   }
   
   private class EntryOffset {
