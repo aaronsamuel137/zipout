@@ -55,6 +55,7 @@ public class ZipOutputStream extends DeflaterOutputStream{
   public void closeEntry() {
     try {
       ensureOpen();
+      System.out.println(currentEntry.entry.getName());
       writeCentralDirectoryHeader(currentEntry);
       crc.reset();
     } catch (IOException e) {}
