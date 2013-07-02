@@ -1,7 +1,10 @@
-package java.util.zip;
+
+
+import java.io.BufferedOutputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-
+import java.util.zip.DeflaterOutputStream;
 
 public class ZipOutputStream extends DeflaterOutputStream{
   private static final int SIGNATURE = 0x04034b50;
@@ -9,20 +12,22 @@ public class ZipOutputStream extends DeflaterOutputStream{
   private static final short BITFLAG = 8;
   private static final short METHOD = 8;
   
+  private final OutputStream out;
+  //private final Deflater deflater = null;
+  //private final byte[] buffer = null;
+  
 
   //private byte[] SIGNATURE = { 0x50, 0x4B, 0x03, 0x04 };
   //private byte[] RANDOM_BYTES = { 0x2, 0x3 };
-  private OutputStream out;
-  private byte[] data;
   private int offset;
   private boolean closed = false;
 
-  public ZipOutputStream(OutputStream out) {
+  public ZipOutputStream(OutputStream outStream) {
     //super(out, new Deflater(Deflater.DEFAULT_COMPRESSION, true));
-    super(out);
+    super(outStream);
+    out = new BufferedOutputStream(outStream);
+    System.out.println(out); 
     offset = 0;
-    
-    
   }
 
   private void ensureOpen() throws IOException {
@@ -32,8 +37,10 @@ public class ZipOutputStream extends DeflaterOutputStream{
   }
   
   public void putNextEntry(ZipEntry z) {
+    System.out.println("Here");
     try {
       ensureOpen();
+      writeLocalHeader(z);
     } catch (IOException e) {
       // TODO Auto-generated catch block
       e.printStackTrace();
@@ -44,11 +51,19 @@ public class ZipOutputStream extends DeflaterOutputStream{
     
   }
   
-  private void writeLocalHeader(int offset) {
+  private void writeLocalHeader(ZipEntry entry) {
+    System.out.println("Here");
     writeFourBytes(SIGNATURE);
-    writeTwoBytes(VERSION);
-    writeTwoBytes(BITFLAG);
-    writeTwoBytes(METHOD);
+    //writeTwoBytes(VERSION);
+    //writeTwoBytes(BITFLAG);
+    //writeTwoBytes(METHOD);
+    
+    // for testing we need 30 byte headers
+    /*writeFourBytes(0x1234);
+    writeFourBytes(0x1234);
+    writeFourBytes(0x1234);
+    writeFourBytes(0x1234);
+    writeFourBytes(0x1234);*/
   }
 
   private void writeFileData() {
@@ -81,9 +96,10 @@ public class ZipOutputStream extends DeflaterOutputStream{
   }
   
   private void writeTwoBytes(int bytes) {
+    OutputStream out = this.out;
     try {
       out.write(bytes & 0xff);
-      out.write((bytes << 8) & 0xff);
+      out.write((bytes >> 8) & 0xff);
     } catch (IOException e) {
       // TODO Auto-generated catch block
       e.printStackTrace();
@@ -91,11 +107,14 @@ public class ZipOutputStream extends DeflaterOutputStream{
   }
   
   private void writeFourBytes(int bytes) {
+    //OutputStream out = new ByteArrayOutputStream();
+    OutputStream out = this.out;
     try {
+      out.write(bytes);
       out.write(bytes & 0xff);
-      out.write((bytes << 8) & 0xff);
-      out.write((bytes << 16) & 0xff);
-      out.write((bytes << 24) & 0xff);
+      out.write((bytes >> 8) & 0xff);
+      out.write((bytes >> 16) & 0xff);
+      out.write((bytes >> 24) & 0xff);
     } catch (IOException e) {}
   }
   

@@ -1,23 +1,14 @@
-package java.util.zip;
-/* Copyright (c) 2008-2013, Avian Contributors
 
-   Permission to use, copy, modify, and/or distribute this software
-   for any purpose with or without fee is hereby granted, provided
-   that the above copyright notice and this permission notice appear
-   in all copies.
-
-   There is NO WARRANTY for this software.  See license.txt for
-   details. */
 
 import java.util.Calendar;
 
 public class ZipEntry {
   private String name;
   //Minimum version needed to extract the file(s) from a compressed state
-  private static byte REQ_VERSION;
+  private static short REQ_VERSION;
   
   //Method used to compress file
-  private static byte COMPRESSION_METHOD;
+  private static short COMPRESSION_METHOD;
 	
   //Utilize Calendar class to determine time/date of modification
   private static Calendar LAST_MOD;
@@ -73,7 +64,7 @@ public class ZipEntry {
   
   //Method to set the minium version required to open the zip file
   //Valid values for the compression method are the numbers 10 to 63
-  public bool setRequiredVersion(int compMethod){
+  public boolean setRequiredVersion(short compMethod){
 	  if (compMethod < 10 || compMethod > 63){
 		  return false;
 	  }
@@ -85,7 +76,7 @@ public class ZipEntry {
   
   //Method to set the compression method for the file
   //Valid values for the compression method are the numbers 0 to 19
-  public bool setCompressionMethod(int compMethod){
+  public boolean setCompressionMethod(short compMethod){
 	  if (compMethod < 0 || compMethod > 19){
 		  return false;
 	  }

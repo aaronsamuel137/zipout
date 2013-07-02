@@ -5,3 +5,4 @@ avian/
 .settings/
 bin/
 .classpath
+*.txt
