@@ -61,10 +61,8 @@ public class ZipOutputStream {
   public void closeEntry() {
     try {
       ensureOpen();
-      System.out.println("here");
       writeDataDescripter(currentEntry);
       writeCentralDirectoryHeader(currentEntry);
-      System.out.println("here");
     } catch (IOException e) {
       System.out.println("Exception in closeEntry");
     }
