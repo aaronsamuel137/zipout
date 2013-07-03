@@ -16,6 +16,7 @@ public class ZipOutputStream {
   private static final short METHOD = 8;
   private static final int CENTRAL_FILE_HEADER = 0x02014b50;
   private static final int DATA_DESCRIPTER_HEADER = 0x08074b50;
+  private static final int END_OF_CENTRAL_DIRECTORY_SIG = 0x06054b50;
   
   
   private final OutputStream out;
@@ -25,16 +26,16 @@ public class ZipOutputStream {
   private CRC32 crc = new CRC32();
   private EntryOffset currentEntry;
   
-  private long bytesWritten;
+  private int bytesWritten;
+  private int sizeOfCentralDirectory;
   private boolean closed = false;
   private byte[] buffer;
 
   public ZipOutputStream(OutputStream outStream) {
-    //super(outStream);
     out = outStream;
     bytesWritten = 0;
     entries = new ArrayList<EntryOffset>();
-    //deflaterStream = new DeflaterOutputStream(outStream);
+    sizeOfCentralDirectory = 0;
     deflater = new Deflater();
     buffer = new byte[1024 * 4];
   }
@@ -61,8 +62,8 @@ public class ZipOutputStream {
   public void closeEntry() {
     try {
       ensureOpen();
+      crc.reset();
       writeDataDescripter(currentEntry);
-      writeCentralDirectoryHeader(currentEntry);
     } catch (IOException e) {
       System.out.println("Exception in closeEntry");
     }
@@ -100,26 +101,31 @@ public class ZipOutputStream {
     writeFourBytes(currentEntry.entry.uncompSize);
   }
   
-  public void write(byte[] b, int offset, int length) {
-    try {
-      deflater = new Deflater();
-      deflater.setInput(b, offset, length);
-      while (deflater.getRemaining() > 0)
-        deflate();      
-      deflater.finish();
-      while (!deflater.finished())
-        deflate();
-      deflater.dispose();
-      //super.write(b, offset, length);
-      bytesWritten += length;
-    } catch (IOException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
+  public void write(byte[] b, int offset, int length) throws IOException {
+    currentEntry.entry.uncompSize = length;
+    crc.update(b, offset, length);
+    currentEntry.entry.crc = (int) crc.getValue();
+
+    deflater = new Deflater();
+    deflater.setInput(b, offset, length);
+    while (deflater.getRemaining() > 0) {
+      deflate();
+      System.out.println("remaining " + deflater.getRemaining());
     }
+    deflater.finish();
+    System.out.println(!deflater.finished());
+    while (!deflater.finished()) {
+      deflate();
+    }
+    deflater.dispose();
+
+    bytesWritten += length;
   }
 
   private void deflate() throws IOException {
     int len = deflater.deflate(buffer, 0, buffer.length);
+    currentEntry.entry.compSize = len;
+    System.out.println("len " + len);
     if (len > 0)
       out.write(buffer, 0 , len);
   }
@@ -131,32 +137,44 @@ public class ZipOutputStream {
     writeTwoBytes(BITFLAG);
     writeTwoBytes(METHOD);
     
-    writeFourBytes(0); // last mod time
-    
-    writeFourBytes(e.entry.crc);
-    
-    // place holder for size and compressed size
-    for (int i = 0 ; i < 2 ; i++) {
-      writeFourBytes(0);
-    }
-    
-    // file name length
-    writeTwoBytes(e.entry.getName().length() * 2);
+    writeTwoBytes(e.entry.modTime);            // last mod time    
+    writeTwoBytes(e.entry.modDate);            // last mod date
+    writeFourBytes(e.entry.crc);               // crc
+    writeFourBytes(e.entry.compSize);          // compressed size
+    writeFourBytes(e.entry.uncompSize);        // uncompressed size
+   
+    writeTwoBytes(e.entry.getName().length()); // file name length
     
     writeTwoBytes(0); // extra field length is 0 since we didn't use
     writeTwoBytes(0); // comment length is 0 too
     writeTwoBytes(0); // disk number start?
     writeTwoBytes(0); // internal file attribute
     writeFourBytes(0); // external file attribute
-    writeFourBytes((int) e.offset); // relative offset of local header  
+    writeFourBytes((int) e.offset); // relative offset of local header
+
+    int len = writeVariableByteLength(e.entry.getName());
+
+    bytesWritten += 46 + len;
+    sizeOfCentralDirectory += 46 + len;
   }
   
-  private void writeEndofCentralDirectory() {
-    // TODO
+  private void writeEndofCentralDirectory(int offset) {
+    short numEntries = (short) entries.size();
+    writeFourBytes(END_OF_CENTRAL_DIRECTORY_SIG);
+    writeTwoBytes(0);
+    writeTwoBytes(0);
+    writeTwoBytes(numEntries);
+    writeTwoBytes(numEntries);
+    writeFourBytes(sizeOfCentralDirectory);            // length of central directory
+    writeFourBytes(offset);                            // offset of central directory
+    writeTwoBytes(0);                                  // length of added comments, not used
   }
   
   public void close() {
-    // call super.close
+    int offset = bytesWritten;
+    for (EntryOffset e : entries)
+      writeCentralDirectoryHeader(currentEntry);
+    writeEndofCentralDirectory(offset);
   }
   
   private void writeTwoBytes(int bytes) {
@@ -187,6 +205,7 @@ public class ZipOutputStream {
       byte[] bytes = text.getBytes("UTF-8");
       out.write(bytes, 0, bytes.length);
       return bytes.length;
+
     } catch (Exception ex) {
       System.out.println("Unsupported byte encoding");
     }
