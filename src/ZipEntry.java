@@ -1,157 +1,323 @@
-import java.util.Calendar;
+
 import java.util.Date;
-import java.util.zip.CRC32;
+import java.util.Calendar;
 
+/**
+ * This class is used to represent a ZIP file entry.
+ *
+ * @author      David Connelly
+ */
+public
+class ZipEntry implements ZipConstants, Cloneable {
+    String name;        // entry name
+    long time = -1;     // modification time (in DOS time)
+    long crc = -1;      // crc-32 of entry data
+    long size = -1;     // uncompressed size of entry data
+    long csize = -1;    // compressed size of entry data
+    int method = -1;    // compression method
+    byte[] extra;       // optional extra field data for entry
+    String comment;     // optional comment string for entry
 
-public class ZipEntry {
-  String name;
-  //Minimum version needed to extract the file(s) from a compressed state
-  short reqVersion;
-  
-  //Method used to compress file
-  short compressionMethod;
-  
-  //Format of date and time are both 2 byte fields
-  short modTime;
-  short modDate;
-  
-  //CRC-32
-  int crc;
-  
-  //Sizes of file
-  int compSize;
-  int uncompSize;
-  
-  public ZipEntry(String name) {
-    this.name = name;
-    setTimeDate();
-    compSize = 0;
-    uncompSize = 0;
-    CRC32 newCRCvalue = new CRC32();
-    crc = (int) newCRCvalue.getValue();
-  }
+    /**
+     * Compression method for uncompressed entries.
+     */
+    public static final int STORED = 0;
 
-  //Method to return name of the file
-  public String getName() {
-    return name;
-  }
-  
-  //Method to check if file is a directory
-  public boolean isDirectory() {
-    return getName().endsWith("/");
-  }
+    /**
+     * Compression method for compressed (deflated) entries.
+     */
+    public static final int DEFLATED = 8;
 
-  //Method to return the compressed size of the file
-  public int getCompressedSize() {
-    return compSize;
-  }
+    static {
+        /* Zip library is loaded from System.initializeSystemClass */
+        // initIDs();
+    }
 
-  //Method to return the uncompressed size of the file
-  public int getSize() {
-    return uncompSize;
-  }
-  
-  //Method to get the time frome the system
-  public void setTimeDate(){
-	  final int DAY_OF_MONTH = 5;
-	  final int HOUR_OF_DAY = 11;
-	  final int MINUTE = 12;
-	  final int MONTH = 2;
-	  final int SECOND = 13;
-	  final int YEAR = 1;
-	  
-	  //Create Calendar object
-	  Calendar modCalendar = Calendar.getInstance();
-	  
-	  //Hour is military time
-	  int timeBits = modCalendar.get(HOUR_OF_DAY);
-    //adjust to out time zone
-    timeBits = timeBits - 6;
-	  
-	  //Shift bits
-	  timeBits = timeBits << 6;
-	  
-	  //Get the minutes from MyCalendar
-	  int minBits = 0x3f & (modCalendar.get(MINUTE));;
-	  
-	  //Add minutes to dateBits
-	  timeBits = timeBits ^ minBits;
-	  
-	  //Shift bits
-	  timeBits = timeBits << 5;
-	  
-	  //Get the seconds from MyCalendar
-	  int secBits = 0x1f & (modCalendar.get(SECOND));
-	  
-	  //Divide seconds by 2
-	  secBits = secBits >> 1;
-	  
-	  //Add minutes to dateBits
-	  timeBits = timeBits ^ secBits;
-	  
-	  //Truncate to short then store
-	  modTime = (short)timeBits;
-	  
-	  //Year is based on offset from 1980
-	  int dateBits = (modCalendar.get(YEAR) -1980);
+    // private static native void initIDs();
 
-	  //Shift bits over
-	  dateBits = dateBits << 4;
-    //System.out.println(dateBits);
-	  
-	  //Get month from MyCalendar, Jan starts as "0"
-    int month = 0xf & (modCalendar.get(MONTH));
-	  dateBits = dateBits ^ month;
-	  
-	  //Shift bits over again
-	  dateBits = dateBits << 5;
-	  
-	  //Get the day from MyCalendar
-	  int dayBits = 0x1f & modCalendar.get(DAY_OF_MONTH);
-	  
-	  //Mask all but the last 5 bits of day
-	  //int dayMask = 0xFFE0;
-	  //dayBits = dayBits ^ dayMask;
-	  
-	  //Add day to dateBits
-	  dateBits = dateBits ^ dayBits;
-	  
-	  //Truncate to short then store
-	  modDate = (short)dateBits;  
-    
-  }
-  
-  //Method to set the minimum version required to open the zip file
-  //Valid values for the compression method are the numbers 1.0 to 10.0
-  public boolean setRequiredVersion(float versionFloat){
-	  //Check for valid version numbers
-	  if (versionFloat < 1 || versionFloat > 100){
-		  return false;
-	  }
-	  
-	  //Convert to short value for storage
-	  versionFloat = versionFloat * 10;
-	  short versionShort = (short)versionFloat;
-	  
-	  //Set value of version
-	  reqVersion = versionShort;
-	  return true;
-  }
-  
-  //Method to set the compression method for the file
-  //Valid values for the compression method are the numbers 0 to 19 and 99
-  public boolean setCompressionMethod(short compMethod){
-	  if (compMethod == 99){
-		  compressionMethod = compMethod;
-		  return true;
-	  }
-	  else if (compMethod < 0 || compMethod > 19){
-		  return false;
-	  }
-	  else{
-		  compressionMethod = compMethod;
-		  return true;
-	  }
-  }
-  
+    /**
+     * Creates a new zip entry with the specified name.
+     *
+     * @param name the entry name
+     * @exception NullPointerException if the entry name is null
+     * @exception IllegalArgumentException if the entry name is longer than
+     *            0xFFFF bytes
+     */
+    public ZipEntry(String name) {
+        if (name == null) {
+            throw new NullPointerException();
+        }
+        if (name.length() > 0xFFFF) {
+            throw new IllegalArgumentException("entry name too long");
+        }
+        this.name = name;
+    }
+
+    /**
+     * Creates a new zip entry with fields taken from the specified
+     * zip entry.
+     * @param e a zip Entry object
+     */
+    public ZipEntry(ZipEntry e) {
+        name = e.name;
+        time = e.time;
+        crc = e.crc;
+        size = e.size;
+        csize = e.csize;
+        method = e.method;
+        extra = e.extra;
+        comment = e.comment;
+    }
+
+    /*
+     * Creates a new zip entry for the given name with fields initialized
+     * from the specified jzentry data.
+     */
+    ZipEntry(String name, long jzentry) {
+        this.name = name;
+        initFields(jzentry);
+    }
+
+    private native void initFields(long jzentry);
+
+    /*
+     * Creates a new zip entry with fields initialized from the specified
+     * jzentry data.
+     */
+    ZipEntry(long jzentry) {
+        initFields(jzentry);
+    }
+
+    /**
+     * Returns the name of the entry.
+     * @return the name of the entry
+     */
+    public String getName() {
+        return name;
+    }
+
+    /**
+     * Sets the modification time of the entry.
+     * @param time the entry modification time in number of milliseconds
+     *             since the epoch
+     * @see #getTime()
+     */
+    public void setTime(long time) {
+        this.time = javaToDosTime(time);
+    }
+
+    /**
+     * Returns the modification time of the entry, or -1 if not specified.
+     * @return the modification time of the entry, or -1 if not specified
+     * @see #setTime(long)
+     */
+    public long getTime() {
+        return time != -1 ? dosToJavaTime(time) : -1;
+    }
+
+    /**
+     * Sets the uncompressed size of the entry data.
+     * @param size the uncompressed size in bytes
+     * @exception IllegalArgumentException if the specified size is less
+     *            than 0 or greater than 0xFFFFFFFF bytes
+     * @see #getSize()
+     */
+    public void setSize(long size) {
+        if (size < 0 || size > 0xFFFFFFFFL) {
+            throw new IllegalArgumentException("invalid entry size");
+        }
+        this.size = size;
+    }
+
+    /**
+     * Returns the uncompressed size of the entry data, or -1 if not known.
+     * @return the uncompressed size of the entry data, or -1 if not known
+     * @see #setSize(long)
+     */
+    public long getSize() {
+        return size;
+    }
+
+    /**
+     * Returns the size of the compressed entry data, or -1 if not known.
+     * In the case of a stored entry, the compressed size will be the same
+     * as the uncompressed size of the entry.
+     * @return the size of the compressed entry data, or -1 if not known
+     * @see #setCompressedSize(long)
+     */
+    public long getCompressedSize() {
+        return csize;
+    }
+
+    /**
+     * Sets the size of the compressed entry data.
+     * @param csize the compressed size to set to
+     * @see #getCompressedSize()
+     */
+    public void setCompressedSize(long csize) {
+        this.csize = csize;
+    }
+
+    /**
+     * Sets the CRC-32 checksum of the uncompressed entry data.
+     * @param crc the CRC-32 value
+     * @exception IllegalArgumentException if the specified CRC-32 value is
+     *            less than 0 or greater than 0xFFFFFFFF
+     * @see #getCrc()
+     */
+    public void setCrc(long crc) {
+        if (crc < 0 || crc > 0xFFFFFFFFL) {
+            throw new IllegalArgumentException("invalid entry crc-32");
+        }
+        this.crc = crc;
+    }
+
+    /**
+     * Returns the CRC-32 checksum of the uncompressed entry data, or -1 if
+     * not known.
+     * @return the CRC-32 checksum of the uncompressed entry data, or -1 if
+     * not known
+     * @see #setCrc(long)
+     */
+    public long getCrc() {
+        return crc;
+    }
+
+    /**
+     * Sets the compression method for the entry.
+     * @param method the compression method, either STORED or DEFLATED
+     * @exception IllegalArgumentException if the specified compression
+     *            method is invalid
+     * @see #getMethod()
+     */
+    public void setMethod(int method) {
+        if (method != STORED && method != DEFLATED) {
+            throw new IllegalArgumentException("invalid compression method");
+        }
+        this.method = method;
+    }
+
+    /**
+     * Returns the compression method of the entry, or -1 if not specified.
+     * @return the compression method of the entry, or -1 if not specified
+     * @see #setMethod(int)
+     */
+    public int getMethod() {
+        return method;
+    }
+
+    /**
+     * Sets the optional extra field data for the entry.
+     * @param extra the extra field data bytes
+     * @exception IllegalArgumentException if the length of the specified
+     *            extra field data is greater than 0xFFFF bytes
+     * @see #getExtra()
+     */
+    public void setExtra(byte[] extra) {
+        if (extra != null && extra.length > 0xFFFF) {
+            throw new IllegalArgumentException("invalid extra field length");
+        }
+        this.extra = extra;
+    }
+
+    /**
+     * Returns the extra field data for the entry, or null if none.
+     * @return the extra field data for the entry, or null if none
+     * @see #setExtra(byte[])
+     */
+    public byte[] getExtra() {
+        return extra;
+    }
+
+    /**
+     * Sets the optional comment string for the entry.
+     * @param comment the comment string
+     * @exception IllegalArgumentException if the length of the specified
+     *            comment string is greater than 0xFFFF bytes
+     * @see #getComment()
+     */
+    public void setComment(String comment) {
+        if (comment != null && comment.length() > 0xffff/3
+                    && ZipOutputStream.getUTF8Length(comment) > 0xffff) {
+            throw new IllegalArgumentException("invalid entry comment length");
+        }
+        this.comment = comment;
+    }
+
+    /**
+     * Returns the comment string for the entry, or null if none.
+     * @return the comment string for the entry, or null if none
+     * @see #setComment(String)
+     */
+    public String getComment() {
+        return comment;
+    }
+
+    /**
+     * Returns true if this is a directory entry. A directory entry is
+     * defined to be one whose name ends with a '/'.
+     * @return true if this is a directory entry
+     */
+    public boolean isDirectory() {
+        return name.endsWith("/");
+    }
+
+    /**
+     * Returns a string representation of the ZIP entry.
+     */
+    public String toString() {
+        return getName();
+    }
+
+    /*
+     * Converts DOS time to Java time (number of milliseconds since epoch).
+     */
+    private static long dosToJavaTime(long dtime) {
+        /*
+        Date d = new Date((int)(((dtime >> 25) & 0x7f) + 80),
+                          (int)(((dtime >> 21) & 0x0f) - 1),
+                          (int)((dtime >> 16) & 0x1f),
+                          (int)((dtime >> 11) & 0x1f),
+                          (int)((dtime >> 5) & 0x3f),
+                          (int)((dtime << 1) & 0x3e));
+        return d.getTime();
+        */
+        Date d = new Date();
+        return d.getTime();
+    }
+
+    /*
+     * Converts Java time to DOS time.
+     */
+    private static long javaToDosTime(long time) {
+        Date d = new Date(time);
+        int year = Calendar.getInstance().get(Calendar.YEAR) + 1900;
+        if (year < 1980) {
+            return (1 << 21) | (1 << 16);
+        }
+        return (year - 1980) << 25 | (Calendar.getInstance().get(Calendar.MONTH) + 1) << 21 |
+               Calendar.getInstance().get(Calendar.DAY_OF_MONTH) << 16 | Calendar.getInstance().get(Calendar.HOUR_OF_DAY) << 11 | Calendar.getInstance().get(Calendar.MINUTE) << 5 |
+               Calendar.getInstance().get(Calendar.SECOND) >> 1;
+    }
+
+    /**
+     * Returns the hash code value for this entry.
+     */
+    public int hashCode() {
+        return name.hashCode();
+    }
+
+    /**
+     * Returns a copy of this entry.
+     */
+    public Object clone() {
+        try {
+            ZipEntry e = (ZipEntry)super.clone();
+            e.extra = (extra == null) ? null : extra.clone();
+            return e;
+        } catch (CloneNotSupportedException e) {
+            // This should never happen, since we are Cloneable
+            throw new Error();
+        }
+    }
 }
