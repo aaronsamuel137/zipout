@@ -9,7 +9,7 @@ import java.util.zip.CRC32;
 import java.util.zip.DeflaterOutputStream;
 import java.util.zip.Deflater;
 
-public class ZipOutputStream {
+public class ZipOutputStream extends DeflaterOutputStream  {
   private static final int SIGNATURE = 0x04034b50;
   private static final short VERSION = 20;
   private static final short BITFLAG = 0x0808;
@@ -21,7 +21,7 @@ public class ZipOutputStream {
   
   private final OutputStream out;
   private DeflaterOutputStream deflaterStream;
-  private Deflater deflater = null;
+  //private Deflater deflater = null;
   private List<EntryOffset> entries;
   private CRC32 crc = new CRC32();
   private EntryOffset currentEntry;
@@ -31,12 +31,14 @@ public class ZipOutputStream {
   private boolean closed = false;
   private byte[] buffer;
 
-  public ZipOutputStream(OutputStream outStream) {
+
+  public ZipOutputStream(OutputStream outStream){
+    super(outStream);
     out = outStream;
     bytesWritten = 0;
     entries = new ArrayList<EntryOffset>();
     sizeOfCentralDirectory = 0;
-    deflater = new Deflater();
+    //deflater = new Deflater();
     buffer = new byte[1024 * 4];
   }
 
@@ -63,6 +65,10 @@ public class ZipOutputStream {
     try {
       ensureOpen();
       crc.reset();
+      deflater.finish();
+      while (!deflater.finished())
+        super.deflate();
+      //deflater.dispose();
       writeDataDescripter(currentEntry);
     } catch (IOException e) {
       System.out.println("Exception in closeEntry");
@@ -101,13 +107,21 @@ public class ZipOutputStream {
     writeFourBytes(currentEntry.entry.uncompSize);
   }
   
-  public void write(byte[] b, int offset, int length) throws IOException {
+  public synchronized void write(byte[] b, int offset, int length) throws IOException {
     currentEntry.entry.uncompSize = length;
     crc.update(b, offset, length);
     currentEntry.entry.crc = (int) crc.getValue();
 
-    deflater = new Deflater();
+    super.write(b, offset, length);
+    //super.close();
+
+    /*deflater = new Deflater();
     deflater.setInput(b, offset, length);
+    deflater.finish();
+    int len = deflater.deflate(buffer, 0, buffer.length);
+    currentEntry.entry.compSize = len;
+    System.out.println("len " + len);
+    deflater.end();
     while (deflater.getRemaining() > 0) {
       deflate();
       System.out.println("remaining " + deflater.getRemaining());
@@ -116,19 +130,19 @@ public class ZipOutputStream {
     System.out.println(!deflater.finished());
     while (!deflater.finished()) {
       deflate();
-    }
-    deflater.dispose();
+    }*/
+    //deflater.dispose();
 
     bytesWritten += length;
   }
 
-  private void deflate() throws IOException {
+  /*private void deflate() throws IOException {
     int len = deflater.deflate(buffer, 0, buffer.length);
     currentEntry.entry.compSize = len;
     System.out.println("len " + len);
     if (len > 0)
       out.write(buffer, 0 , len);
-  }
+  }*/
   
   private void writeCentralDirectoryHeader(EntryOffset e) {
     writeFourBytes(CENTRAL_FILE_HEADER);
