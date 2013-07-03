@@ -16,6 +16,7 @@ public class JavaZip
 {
 	private static final String TEST1 = "this is a test";
 	private static final String TEST2 = "this is a test, a much\nmore extensive test";
+	private static final String TEST3 = "this is a test, a much\nmore extensive test! HURAAH!";
 
 	public static void main(String[] args)
 	{
@@ -23,22 +24,23 @@ public class JavaZip
 		String workingDir = System.getProperty("user.dir");
 		File testFile = new File(workingDir, "test.txt");
 		File testFile2 = new File(workingDir, "test2.txt");
-		if (testFile.exists())
-		  try {
-		    testFile.delete();
-		  } catch (Exception e) {}
-
-	    if (testFile2.exists())
-		try {
-		    testFile2.delete();
-		  } catch (Exception e) {}
-	  
-		writeTestFile(testFile, TEST1);
-		writeTestFile(testFile2, TEST2);
+		File testFile3 = new File(workingDir, "test3.txt");
 
 		List<File> testFiles = new ArrayList<File>();
 		testFiles.add(testFile);
 		testFiles.add(testFile2);
+		testFiles.add(testFile3);
+
+		for (File f : testFiles) {
+			if (f.exists())
+			  try {
+			    f.delete();
+			  } catch (Exception e) {}
+		}
+		
+		writeTestFile(testFile, TEST1);
+		writeTestFile(testFile2, TEST2);
+		writeTestFile(testFile3, TEST3);
 		
 		File outputFile = new File(workingDir, "java.zip");
 		if (outputFile.exists()) {

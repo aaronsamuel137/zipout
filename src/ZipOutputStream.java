@@ -114,8 +114,6 @@ public class ZipOutputStream extends DeflaterOutputStream {
     deflater = new Deflater(DEFAULT_LEVEL, true);
     deflater.setInput(b, offset, length);
 
-    // remove deflate encapsulation
-    //deflater.deflate(new byte[2]);
 
     while (deflater.getRemaining() > 0)
       deflate();
@@ -130,7 +128,6 @@ public class ZipOutputStream extends DeflaterOutputStream {
   }
 
   private void deflate() throws IOException {
-    //OutputStream out2 = new BufferedOutputStream(System.out);
     int len = deflater.deflate(buffer, 0, buffer.length);
     currentEntry.entry.compSize = len;
     if (len > 0)
@@ -176,6 +173,7 @@ public class ZipOutputStream extends DeflaterOutputStream {
     writeFourBytes(sizeOfCentralDirectory);     // length of central directory
     writeFourBytes(offset);                     // offset of central directory
     writeTwoBytes(0);                           // length of added comments, not used
+    bytesWritten += 22;
   }
   
   public void close() {
@@ -183,6 +181,8 @@ public class ZipOutputStream extends DeflaterOutputStream {
     for (EntryOffset e : entries)
       writeCentralDirectoryHeader(e);
     writeEndofCentralDirectory(offset);
+    System.out.println("offset " + offset);
+    System.out.println("Close " + bytesWritten);
   }
   
   private void writeTwoBytes(int bytes) {
@@ -196,8 +196,6 @@ public class ZipOutputStream extends DeflaterOutputStream {
   }
   
   private void writeFourBytes(int bytes) {
-    //OutputStream out = new ByteArrayOutputStream();
-    //OutputStream out = this.out;
     try {
       out.write(bytes & 0xff);
       out.write((bytes >> 8) & 0xff);
