@@ -100,7 +100,7 @@ public class ZipEntry {
     //System.out.println(dateBits);
 	  
 	  //Get month from MyCalendar, Jan starts as "0"
-    int month = 0xf & (modCalendar.get(MONTH));
+    int month = 0xf & ((modCalendar.get(MONTH)) + 1);
 	  dateBits = dateBits ^ month;
 	  
 	  //Shift bits over again

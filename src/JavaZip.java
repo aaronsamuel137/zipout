@@ -32,7 +32,7 @@ public class JavaZip
 		try {
 		    testFile2.delete();
 		  } catch (Exception e) {}
-		  
+	  
 		writeTestFile(testFile, TEST1);
 		writeTestFile(testFile2, TEST2);
 
