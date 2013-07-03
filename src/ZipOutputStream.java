@@ -15,6 +15,7 @@ public class ZipOutputStream {
   private static final short BITFLAG = 0x0808;
   private static final short METHOD = 8;
   private static final int CENTRAL_FILE_HEADER = 0x02014b50;
+  private static final int DATA_DESCRIPTER_HEADER = 0x08074b50;
   
   
   private final OutputStream out;
@@ -60,10 +61,13 @@ public class ZipOutputStream {
   public void closeEntry() {
     try {
       ensureOpen();
+      System.out.println("here");
+      writeDataDescripter(currentEntry);
       writeCentralDirectoryHeader(currentEntry);
-      crc.reset();
-      //deflaterStream.close();
-    } catch (IOException e) {}
+      System.out.println("here");
+    } catch (IOException e) {
+      System.out.println("Exception in closeEntry");
+    }
   }
   
   private void writeLocalHeader(ZipEntry e) {
@@ -76,18 +80,26 @@ public class ZipOutputStream {
     writeTwoBytes(e.modDate);
 
     // CRC is 0 for local header
-    writeFourBytes(0);
-    writeFourBytes(0);
+    writeFourBytes(0); // maybe should be 8 bytes?
 
-    writeFourBytes(e.compSize);
-    writeFourBytes(e.uncompSize);
+    // if flag is not set, size is written as 0 here
+    // and written after the file
+    writeFourBytes(0);    // compressed size
+    writeFourBytes(0);    // uncompressed size
 
     writeTwoBytes(e.name.length());
-    writeTwoBytes(0); //extra field length, 0 for default
+    writeTwoBytes(0);     //extra field length, 0 for default
 
     int len = writeVariableByteLength(e.getName());
 
-    bytesWritten += 34 + len;
+    bytesWritten += 30 + len;
+  }
+  
+  private void writeDataDescripter(EntryOffset currentEntry) {
+    writeFourBytes(DATA_DESCRIPTER_HEADER);
+    writeFourBytes(currentEntry.entry.crc);
+    writeFourBytes(currentEntry.entry.compSize); 
+    writeFourBytes(currentEntry.entry.uncompSize);
   }
   
   public void write(byte[] b, int offset, int length) {
@@ -102,7 +114,6 @@ public class ZipOutputStream {
       deflater.dispose();
       //super.write(b, offset, length);
       bytesWritten += length;
-      crc.update(b, offset, length);
     } catch (IOException e) {
       // TODO Auto-generated catch block
       e.printStackTrace();
@@ -114,10 +125,6 @@ public class ZipOutputStream {
     if (len > 0)
       out.write(buffer, 0 , len);
   }
-
-  private void writeDataDescriptor() {
-    // not needed yet
-  }
   
   private void writeCentralDirectoryHeader(EntryOffset e) {
     writeFourBytes(CENTRAL_FILE_HEADER);
@@ -128,7 +135,7 @@ public class ZipOutputStream {
     
     writeFourBytes(0); // last mod time
     
-    writeFourBytes((int)crc.getValue());
+    writeFourBytes(e.entry.crc);
     
     // place holder for size and compressed size
     for (int i = 0 ; i < 2 ; i++) {
@@ -143,9 +150,11 @@ public class ZipOutputStream {
     writeTwoBytes(0); // disk number start?
     writeTwoBytes(0); // internal file attribute
     writeFourBytes(0); // external file attribute
-    writeFourBytes((int) e.offset); // relative offset of local header
-    
-    
+    writeFourBytes((int) e.offset); // relative offset of local header  
+  }
+  
+  private void writeEndofCentralDirectory() {
+    // TODO
   }
   
   public void close() {
