@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.zip.CRC32;
 import java.util.zip.DeflaterOutputStream;
 import java.util.zip.Deflater;
+import java.io.BufferedOutputStream;
 
 public class ZipOutputStream {
   private static final int SIGNATURE = 0x04034b50;
@@ -17,6 +18,7 @@ public class ZipOutputStream {
   private static final int CENTRAL_FILE_HEADER = 0x02014b50;
   private static final int DATA_DESCRIPTER_HEADER = 0x08074b50;
   private static final int END_OF_CENTRAL_DIRECTORY_SIG = 0x06054b50;
+  private static final int DEFAULT_LEVEL = 6;
   
   
   private final OutputStream out;
@@ -36,7 +38,6 @@ public class ZipOutputStream {
     bytesWritten = 0;
     entries = new ArrayList<EntryOffset>();
     sizeOfCentralDirectory = 0;
-    deflater = new Deflater();
     buffer = new byte[1024 * 4];
   }
 
@@ -105,9 +106,13 @@ public class ZipOutputStream {
     currentEntry.entry.uncompSize = length;
     crc.update(b, offset, length);
     currentEntry.entry.crc = (int) crc.getValue();
-
-    deflater = new Deflater();
+    
+    deflater = new Deflater(DEFAULT_LEVEL, true);
     deflater.setInput(b, offset, length);
+
+    // remove deflate encapsulation
+    //deflater.deflate(new byte[2]);
+
     while (deflater.getRemaining() > 0) {
       deflate();
       System.out.println("remaining " + deflater.getRemaining());
@@ -123,6 +128,7 @@ public class ZipOutputStream {
   }
 
   private void deflate() throws IOException {
+    //OutputStream out2 = new BufferedOutputStream(System.out);
     int len = deflater.deflate(buffer, 0, buffer.length);
     currentEntry.entry.compSize = len;
     System.out.println("len " + len);
