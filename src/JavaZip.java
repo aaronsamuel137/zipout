@@ -38,7 +38,7 @@ public class JavaZip
 
 		List<File> testFiles = new ArrayList<File>();
 		testFiles.add(testFile);
-		//testFiles.add(testFile2);
+		testFiles.add(testFile2);
 		
 		File outputFile = new File(workingDir, "java.zip");
 		if (outputFile.exists()) {
