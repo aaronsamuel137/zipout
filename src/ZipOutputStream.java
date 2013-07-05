@@ -34,7 +34,6 @@ public class ZipOutputStream extends DeflaterOutputStream {
   private List<ZipEntry> entries;
   private CRC32 crc = new CRC32();
   private ZipEntry currentEntry;
-  //private boolean isCurrent;
   
   private int bytesWritten;
   private int sizeOfCentralDirectory;
@@ -114,6 +113,12 @@ public class ZipOutputStream extends DeflaterOutputStream {
     deflater.setInput(b, offset, length);
     while (deflater.getRemaining() > 0)
       deflate();
+  }
+
+  public void write(int b) throws IOException {
+    byte[] buf = new byte[1];
+    buf[0] = (byte)(b & 0xff);
+    write(buf, 0, 1);
   }
 
   private void deflate() throws IOException {
