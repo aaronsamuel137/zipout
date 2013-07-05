@@ -142,15 +142,17 @@ public class ZipOutputStream extends DeflaterOutputStream {
     writeFourBytes(e.uncompSize);        // uncompressed size
    
     writeTwoBytes(e.getName().length()); // file name length
-    
-    writeTwoBytes(0); // extra field length is 0 since we didn't use
-    writeTwoBytes(0); // comment length is 0 too
-    writeTwoBytes(0); // disk number start?
-    writeTwoBytes(0); // internal file attribute
-    writeFourBytes(0); // external file attribute
-    writeFourBytes((int) e.offset); // relative offset of local header
 
-    int len = writeVariableByteLength(e.entry.getName());
+    // the following 5 fields are all 0 for a simple default compression
+    writeTwoBytes(0);                    // extra field length (not used)
+    writeTwoBytes(0);                    // comment length (not used)
+    writeTwoBytes(0);                    // disk number start
+    writeTwoBytes(0);                    // internal file attribute
+    writeFourBytes(0);                   // external file attribute
+
+    writeFourBytes((int) e.offset);      // relative offset of local header
+
+    int len = writeVariableByteLength(e.getName());
     System.out.println("CENTRAL LENGTH " + len);
 
     bytesWritten += 46 + len;
@@ -159,14 +161,14 @@ public class ZipOutputStream extends DeflaterOutputStream {
   
   private void writeEndofCentralDirectory(int offset) throws IOException {
     short numEntries = (short) entries.size();
-    writeFourBytes(END_OF_CENTRAL_DIRECTORY_SIG);
-    writeTwoBytes(0);
+    writeFourBytes(END_OF_CENTRAL_DIRECTORY_SIG);  // end of central directory signature
+    writeTwoBytes(0);                              // 
     writeTwoBytes(0);
     writeTwoBytes(numEntries);
     writeTwoBytes(numEntries);
-    writeFourBytes(sizeOfCentralDirectory);     // length of central directory
-    writeFourBytes(offset);                     // offset of central directory
-    writeTwoBytes(0);                           // length of added comments, not used
+    writeFourBytes(sizeOfCentralDirectory);        // length of central directory
+    writeFourBytes(offset);                        // offset of central directory
+    writeTwoBytes(0);                              // length of added comments (not used)
     bytesWritten += 22;
   }
   
@@ -200,15 +202,5 @@ public class ZipOutputStream extends DeflaterOutputStream {
       System.out.println("Unsupported byte encoding");
     }
     return 0;
-  }
-  
-  private class EntryOffset {
-    public long offset;
-    public ZipEntry entry;
-    public EntryOffset(long off, ZipEntry e) {
-      this.offset = off;
-      this.entry = e;
-    }
-  }
-  
+  }  
 }
