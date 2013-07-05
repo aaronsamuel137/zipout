@@ -33,13 +33,17 @@ public class ZipOutputStream extends DeflaterOutputStream {
   private boolean closed = false;
   private byte[] buffer;
 
-  public ZipOutputStream(OutputStream outStream) {
+  public ZipOutputStream(OutputStream outStream, int bufferSize) {
     super(outStream);
     out = outStream;
     bytesWritten = 0;
     entries = new ArrayList<EntryOffset>();
     sizeOfCentralDirectory = 0;
-    buffer = new byte[1024 * 4];
+    buffer = new byte[bufferSize];
+  }
+
+  public ZipOutputStream(OutputStream outStream) {
+    this(outStream, 4 * 1024);
   }
 
   private void ensureOpen() throws IOException {
@@ -48,60 +52,50 @@ public class ZipOutputStream extends DeflaterOutputStream {
     }
   }
   
-  public void putNextEntry(ZipEntry z) {
-    try {
-      ensureOpen();
-      EntryOffset entry = new EntryOffset(bytesWritten, z);
-      currentEntry = entry;
-      entries.add(entry);
-      writeLocalHeader(z);
-    } catch (IOException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
-    }
+  public void putNextEntry(ZipEntry z) throws IOException {
+    ensureOpen();
+    EntryOffset entry = new EntryOffset(bytesWritten, z);
+    currentEntry = entry;
+    entries.add(entry);
+    writeLocalHeader(z);
   }
   
-  public void closeEntry() {
-    try {
-      ensureOpen();
-      crc.reset();
-      writeDataDescripter(currentEntry);
-    } catch (IOException e) {
-      System.out.println("Exception in closeEntry");
-    }
+  public void closeEntry() throws IOException {
+    ensureOpen();
+    crc.reset();
+    writeDataDescripter(currentEntry);
   }
   
-  private void writeLocalHeader(ZipEntry e) {
-    writeFourBytes(SIGNATURE);
-    writeTwoBytes(VERSION);
-    writeTwoBytes(BITFLAG);
-    writeTwoBytes(METHOD);
+  private void writeLocalHeader(ZipEntry e) throws IOException {
+    writeFourBytes(SIGNATURE);       // local header signature
+    writeTwoBytes(VERSION);          // version used
+    writeTwoBytes(BITFLAG);          // flags
+    writeTwoBytes(METHOD);           // compression method
+    writeTwoBytes(e.modTime);        // last modified time
+    writeTwoBytes(e.modDate);        // last modified date   
+    writeFourBytes(0);               // CRC is 0 for local header
 
-    writeTwoBytes(e.modTime);
-    writeTwoBytes(e.modDate);
+    // with default flag settings, the compressed and uncompressed size
+    // is written here as 0 and written correctly in the data descripter
+    writeFourBytes(0);               // compressed size
+    writeFourBytes(0);               // uncompressed size
+    writeTwoBytes(e.name.length());  // length of file name
 
-    // CRC is 0 for local header
-    writeFourBytes(0); // maybe should be 8 bytes?
+    // extra field length, in this implementation extra field in not used
+    writeTwoBytes(0);
 
-    // if flag is not set, size is written as 0 here
-    // and written after the file
-    writeFourBytes(0);    // compressed size
-    writeFourBytes(0);    // uncompressed size
-
-    writeTwoBytes(e.name.length());
-    writeTwoBytes(0);     //extra field length, 0 for default
-
+    // write file name, return the number of bytes written
     int len = writeVariableByteLength(e.getName());
     System.out.println("local " + len);
 
     bytesWritten += 30 + len;
   }
   
-  private void writeDataDescripter(EntryOffset currentEntry) {
-    writeFourBytes(DATA_DESCRIPTER_HEADER);
-    writeFourBytes(currentEntry.entry.crc);
-    writeFourBytes(currentEntry.entry.compSize); 
-    writeFourBytes(currentEntry.entry.uncompSize);
+  private void writeDataDescripter(EntryOffset currentEntry) throws IOException {
+    writeFourBytes(DATA_DESCRIPTER_HEADER);        // data descripter header
+    writeFourBytes(currentEntry.entry.crc);        // crc value
+    writeFourBytes(currentEntry.entry.compSize);   // compressed size
+    writeFourBytes(currentEntry.entry.uncompSize); // uncompressed size
     bytesWritten += 16;
   }
   
@@ -134,7 +128,7 @@ public class ZipOutputStream extends DeflaterOutputStream {
       out.write(buffer, 0 , len);
   }
   
-  private void writeCentralDirectoryHeader(EntryOffset e) {
+  private void writeCentralDirectoryHeader(EntryOffset e) throws IOException {
     writeFourBytes(CENTRAL_FILE_HEADER);
     writeTwoBytes(VERSION);
     writeTwoBytes(VERSION);
@@ -163,7 +157,7 @@ public class ZipOutputStream extends DeflaterOutputStream {
     sizeOfCentralDirectory += 46 + len;
   }
   
-  private void writeEndofCentralDirectory(int offset) {
+  private void writeEndofCentralDirectory(int offset) throws IOException {
     short numEntries = (short) entries.size();
     writeFourBytes(END_OF_CENTRAL_DIRECTORY_SIG);
     writeTwoBytes(0);
@@ -176,7 +170,7 @@ public class ZipOutputStream extends DeflaterOutputStream {
     bytesWritten += 22;
   }
   
-  public void close() {
+  public void close() throws IOException {
     int offset = bytesWritten;
     for (EntryOffset e : entries)
       writeCentralDirectoryHeader(e);
@@ -185,33 +179,23 @@ public class ZipOutputStream extends DeflaterOutputStream {
     System.out.println("Close " + bytesWritten);
   }
   
-  private void writeTwoBytes(int bytes) {
-    try {
-      out.write(bytes & 0xff);
-      out.write((bytes >> 8) & 0xff);
-    } catch (IOException e) {
-      // TODO Auto-generated catch block
-      e.printStackTrace();
-    }
+  private void writeTwoBytes(int bytes) throws IOException {
+    out.write(bytes & 0xff);
+    out.write((bytes >> 8) & 0xff);
   }
   
-  private void writeFourBytes(int bytes) {
-    try {
-      out.write(bytes & 0xff);
-      out.write((bytes >> 8) & 0xff);
-      out.write((bytes >> 16) & 0xff);
-      out.write((bytes >> 24) & 0xff);
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
+  private void writeFourBytes(int bytes) throws IOException {
+    out.write(bytes & 0xff);
+    out.write((bytes >> 8) & 0xff);
+    out.write((bytes >> 16) & 0xff);
+    out.write((bytes >> 24) & 0xff);
   }
 
-  private int writeVariableByteLength(String text) {
+  private int writeVariableByteLength(String text) throws IOException {
     try {
       byte[] bytes = text.getBytes("UTF-8");
       out.write(bytes, 0, bytes.length);
       return bytes.length;
-
     } catch (Exception ex) {
       System.out.println("Unsupported byte encoding");
     }

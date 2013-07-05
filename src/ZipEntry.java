@@ -21,14 +21,18 @@ public class ZipEntry {
   //Sizes of file
   int compSize;
   int uncompSize;
+
+  int offset;
   
   public ZipEntry(String name) {
     this.name = name;
     setTimeDate();
     compSize = 0;
     uncompSize = 0;
-    CRC32 newCRCvalue = new CRC32();
-    crc = (int) newCRCvalue.getValue();
+    crc = 0;
+    offset = 0;
+    //CRC32 newCRCvalue = new CRC32();
+    //crc = (int) newCRCvalue.getValue();
   }
 
   //Method to return name of the file
