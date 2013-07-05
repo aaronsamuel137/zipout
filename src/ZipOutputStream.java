@@ -10,11 +10,19 @@ import java.util.zip.DeflaterOutputStream;
 import java.util.zip.Deflater;
 import java.io.BufferedOutputStream;
 
+
+/**
+ *  An as simple as possible implementation of ZipOutputStream
+ *  Compression method defaults to DEFLATE
+ *  All hardcoded defaults match the defaults for openJDK,
+ *  including PKZip version, bit flags set, compression level, etc
+ *  
+ */
 public class ZipOutputStream extends DeflaterOutputStream {
   private static final int SIGNATURE =                    0x04034b50;
-  private static final short VERSION =                    20;
-  private static final short BITFLAG =                    8;//0x0808;
-  private static final short METHOD =                     8;
+  private static final short VERSION =                    0x0014; //20;
+  private static final short BITFLAG =                    0x0008;//0x0808;
+  private static final short METHOD =                     0x0008;
   private static final int CENTRAL_FILE_HEADER =          0x02014b50;
   private static final int DATA_DESCRIPTER_HEADER =       0x08074b50;
   private static final int END_OF_CENTRAL_DIRECTORY_SIG = 0x06054b50;
@@ -22,10 +30,11 @@ public class ZipOutputStream extends DeflaterOutputStream {
   
   private final OutputStream out;
   private DeflaterOutputStream deflaterStream;
-  private Deflater deflater = null;
+  private Deflater deflater;
   private List<ZipEntry> entries;
-  private CRC32 crc;
+  private CRC32 crc = new CRC32();
   private ZipEntry currentEntry;
+  //private boolean isCurrent;
   
   private int bytesWritten;
   private int sizeOfCentralDirectory;
@@ -38,22 +47,31 @@ public class ZipOutputStream extends DeflaterOutputStream {
     sizeOfCentralDirectory = 0;
     entries = new ArrayList<ZipEntry>();
     buffer = new byte[bufferSize];
+    deflater = new Deflater(DEFAULT_LEVEL, true);
   }
 
   public ZipOutputStream(OutputStream outStream) {
     this(outStream, 4 * 1024);
   }
   
-  public void putNextEntry(ZipEntry z) throws IOException {
-    z.offset = bytesWritten;
-    currentEntry = z;
-    entries.add(z);
-    writeLocalHeader(z);
+  public void putNextEntry(ZipEntry e) throws IOException {
+    e.offset = bytesWritten;
+    currentEntry = e;
+    entries.add(e);
+    writeLocalHeader(e);
   }
   
   public void closeEntry() throws IOException {
+    deflater.finish();
+    while (!deflater.finished()) {
+      deflate();
+    }
+    deflater.dispose();
+    deflater.reset();
+
+    currentEntry.crc = (int) crc.getValue();
     crc.reset();
-    writeDataDescripter(currentEntry);
+    writeDataDescriptor(currentEntry);
   }
   
   private void writeLocalHeader(ZipEntry e) throws IOException {
@@ -80,7 +98,7 @@ public class ZipOutputStream extends DeflaterOutputStream {
     bytesWritten += 30 + len;
   }
   
-  private void writeDataDescripter(ZipEntry currentEntry) throws IOException {
+  private void writeDataDescriptor(ZipEntry currentEntry) throws IOException {
     writeFourBytes(DATA_DESCRIPTER_HEADER);  // data descripter header
     writeFourBytes(currentEntry.crc);        // crc value
     writeFourBytes(currentEntry.compSize);   // compressed size
@@ -89,26 +107,18 @@ public class ZipOutputStream extends DeflaterOutputStream {
   }
   
   public void write(byte[] b, int offset, int length) throws IOException {
-    currentEntry.uncompSize = length;
-    crc = new CRC32();
+    currentEntry.uncompSize += length;
     crc.update(b, offset, length);
     currentEntry.crc = (int) crc.getValue();
     
-    deflater = new Deflater(DEFAULT_LEVEL, true);
     deflater.setInput(b, offset, length);
     while (deflater.getRemaining() > 0)
       deflate();
-
-    deflater.finish();
-    while (!deflater.finished()) {
-      deflate();
-    }
-    deflater.dispose();
   }
 
   private void deflate() throws IOException {
     int len = deflater.deflate(buffer, 0, buffer.length);
-    currentEntry.compSize = len;
+    currentEntry.compSize += len;
     bytesWritten += len;
     if (len > 0)
       out.write(buffer, 0 , len);

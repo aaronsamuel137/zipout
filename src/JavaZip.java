@@ -23,18 +23,19 @@ public class JavaZip
 	{
 		byte[] buffer = new byte[1024];
 		String workingDir = System.getProperty("user.dir");
-		File output = new File(workingDir, "Output.txt");
+		File workingDirFile = new File(workingDir, "testFiles");
+		//File output = new File(workingDir, "Output.txt");
 		File testFile = new File(workingDir, "test.txt");
 		File testFile2 = new File(workingDir, "test2.txt");
 		File testFile3 = new File(workingDir, "test3.txt");
 		File testFile4 = new File(workingDir, "test4.txt");
 
-		List<File> testFiles = new ArrayList<File>();
-		testFiles.add(output);
-		/*testFiles.add(testFile);
-		testFiles.add(testFile2);
-		testFiles.add(testFile3);
-		testFiles.add(testFile4);*/
+		//List<File> testFiles = new ArrayList<File>();
+		//testFiles.add(output);
+		//testFiles.add(testFile);
+		//testFiles.add(testFile2);
+		//testFiles.add(testFile3);
+		//testFiles.add(testFile4);
 
 		/*for (File f : testFiles) {
 			if (f.exists())
@@ -63,16 +64,18 @@ public class JavaZip
 			ZipOutputStream outZip = new ZipOutputStream(outFile);
 
 			InputStream inFile;
-
-			for (File f : testFiles) {		
+			System.out.print("writing files, please wait");
+			for (File f : workingDirFile.listFiles()) {		
 				inFile = new FileInputStream(f);					
 				ZipEntry entry = new ZipEntry(f.getName());
 				outZip.putNextEntry(entry);
 			
-				int len = 0;
-				while ((len = inFile.read(buffer)) > 0)
+				int len = inFile.read(buffer);
+				while (len > 0)
 				{
 					outZip.write(buffer, 0, len);
+					//System.out.print(".");
+					len = inFile.read(buffer);
 					//for (byte b : buffer)
 					  //if (b != 0)
 					    //System.out.println(Integer.toHexString(b));
