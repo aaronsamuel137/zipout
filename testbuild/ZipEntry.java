@@ -1,5 +1,7 @@
 import java.util.Calendar;
 import java.util.Date;
+import java.util.zip.CRC32;
+
 
 public class ZipEntry {
   String name;
@@ -19,16 +21,14 @@ public class ZipEntry {
   //Sizes of file
   int compSize;
   int uncompSize;
-
-  int offset;
   
   public ZipEntry(String name) {
     this.name = name;
     setTimeDate();
     compSize = 0;
     uncompSize = 0;
-    crc = 0;
-    offset = 0;
+    CRC32 newCRCvalue = new CRC32();
+    crc = (int) newCRCvalue.getValue();
   }
 
   //Method to return name of the file
@@ -51,22 +51,7 @@ public class ZipEntry {
     return uncompSize;
   }
   
-  /**
-   * Method setTime Date():
-   * Creates a calendar object to retrieve date and time information
-   * 
-   * Time is stored in the MSDOS format 5 bits for hour, 6 bits for min, 5 bits for seconds
-   * Hours are in military time and must be adjusted to time zone
-   * Seconds are divided by two before storing and must be multiplied by two to retrieve
-   *
-   * Date is stored in the MSDOS format 7 bit for year, 4 bit for month, 5 bits for day of month
-   * Year is the number of years since 1980 per, the month is stored starting at 0
-   * for January. Day of month is stored with nature numbering
-   * 
-   * Bit masks and shifting are used to build the time and date bytes
-   * 
-   * @author cjordan
-   **/
+  //Method to get the time frome the system
   public void setTimeDate(){
 	  final int DAY_OF_MONTH = 5;
 	  final int HOUR_OF_DAY = 11;
@@ -74,41 +59,64 @@ public class ZipEntry {
 	  final int MONTH = 2;
 	  final int SECOND = 13;
 	  final int YEAR = 1;
-
+	  
+	  //Create Calendar object
 	  Calendar modCalendar = Calendar.getInstance();
-
-	  //Hour
+	  
+	  //Hour is military time
 	  int timeBits = modCalendar.get(HOUR_OF_DAY);
-      timeBits = timeBits - 6;
+    //adjust to out time zone
+    timeBits = timeBits - 6;
+	  
+	  //Shift bits
 	  timeBits = timeBits << 6;
 	  
-	  //Minutes
+	  //Get the minutes from MyCalendar
 	  int minBits = 0x3f & (modCalendar.get(MINUTE));;
+	  
+	  //Add minutes to dateBits
 	  timeBits = timeBits ^ minBits;
+	  
+	  //Shift bits
 	  timeBits = timeBits << 5;
 	  
-	  //Seconds
+	  //Get the seconds from MyCalendar
 	  int secBits = 0x1f & (modCalendar.get(SECOND));
+	  
+	  //Divide seconds by 2
 	  secBits = secBits >> 1;
+	  
+	  //Add minutes to dateBits
 	  timeBits = timeBits ^ secBits;
 	  
-	  //Store Time
+	  //Truncate to short then store
 	  modTime = (short)timeBits;
 	  
-	  //Year
+	  //Year is based on offset from 1980
 	  int dateBits = (modCalendar.get(YEAR) -1980);
-	  dateBits = dateBits << 4;
 
-	  //Month
-      int month = 0xf & ((modCalendar.get(MONTH)) + 1);
+	  //Shift bits over
+	  dateBits = dateBits << 4;
+    //System.out.println(dateBits);
+	  
+	  //Get month from MyCalendar, Jan starts as "0"
+    int month = 0xf & (modCalendar.get(MONTH));
 	  dateBits = dateBits ^ month;
+	  
+	  //Shift bits over again
 	  dateBits = dateBits << 5;
 	  
-	  //Day of month
+	  //Get the day from MyCalendar
 	  int dayBits = 0x1f & modCalendar.get(DAY_OF_MONTH);
+	  
+	  //Mask all but the last 5 bits of day
+	  //int dayMask = 0xFFE0;
+	  //dayBits = dayBits ^ dayMask;
+	  
+	  //Add day to dateBits
 	  dateBits = dateBits ^ dayBits;
 	  
-	  //Store Date
+	  //Truncate to short then store
 	  modDate = (short)dateBits;  
     
   }

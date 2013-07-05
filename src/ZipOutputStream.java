@@ -20,7 +20,6 @@ public class ZipOutputStream extends DeflaterOutputStream {
   private static final int END_OF_CENTRAL_DIRECTORY_SIG = 0x06054b50;
   private static final int DEFAULT_LEVEL =                6;
   
-  
   private final OutputStream out;
   private DeflaterOutputStream deflaterStream;
   private Deflater deflater = null;
@@ -36,8 +35,8 @@ public class ZipOutputStream extends DeflaterOutputStream {
     super(outStream);
     out = outStream;
     bytesWritten = 0;
-    entries = new ArrayList<ZipEntry>();
     sizeOfCentralDirectory = 0;
+    entries = new ArrayList<ZipEntry>();
     buffer = new byte[bufferSize];
   }
 
@@ -77,7 +76,6 @@ public class ZipOutputStream extends DeflaterOutputStream {
 
     // write file name, return the number of bytes written
     int len = writeVariableByteLength(e.getName());
-    System.out.println("local " + len);
 
     bytesWritten += 30 + len;
   }
@@ -141,7 +139,6 @@ public class ZipOutputStream extends DeflaterOutputStream {
     writeFourBytes((int) e.offset);      // relative offset of local header
 
     int len = writeVariableByteLength(e.getName());
-    System.out.println("CENTRAL LENGTH " + len);
 
     bytesWritten += 46 + len;
     sizeOfCentralDirectory += 46 + len;
@@ -165,8 +162,6 @@ public class ZipOutputStream extends DeflaterOutputStream {
     for (ZipEntry e : entries)
       writeCentralDirectoryHeader(e);
     writeEndofCentralDirectory(centralDirOffset);
-    System.out.println("offset " + centralDirOffset);
-    System.out.println("Close " + bytesWritten);
   }
   
   private void writeTwoBytes(int bytes) throws IOException {
