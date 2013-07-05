@@ -20,8 +20,8 @@ import java.io.BufferedOutputStream;
  */
 public class ZipOutputStream extends DeflaterOutputStream {
   private static final int SIGNATURE =                    0x04034b50;
-  private static final short VERSION =                    0x0014; //20;
-  private static final short BITFLAG =                    0x0008;//0x0808;
+  private static final short VERSION =                    0x0014;
+  private static final short BITFLAG =                    0x0008;
   private static final short METHOD =                     0x0008;
   private static final int CENTRAL_FILE_HEADER =          0x02014b50;
   private static final int DATA_DESCRIPTER_HEADER =       0x08074b50;
