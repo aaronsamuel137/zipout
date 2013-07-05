@@ -92,7 +92,7 @@ public class ZipOutputStream extends DeflaterOutputStream {
   }
   
   private void writeDataDescripter(ZipEntry currentEntry) throws IOException {
-    writeFourBytes(DATA_DESCRIPTER_HEADER);        // data descripter header
+    writeFourBytes(DATA_DESCRIPTER_HEADER);  // data descripter header
     writeFourBytes(currentEntry.crc);        // crc value
     writeFourBytes(currentEntry.compSize);   // compressed size
     writeFourBytes(currentEntry.uncompSize); // uncompressed size
@@ -107,8 +107,6 @@ public class ZipOutputStream extends DeflaterOutputStream {
     
     deflater = new Deflater(DEFAULT_LEVEL, true);
     deflater.setInput(b, offset, length);
-
-
     while (deflater.getRemaining() > 0)
       deflate();
 
@@ -129,11 +127,11 @@ public class ZipOutputStream extends DeflaterOutputStream {
   }
   
   private void writeCentralDirectoryHeader(ZipEntry e) throws IOException {
-    writeFourBytes(CENTRAL_FILE_HEADER);
-    writeTwoBytes(VERSION);
-    writeTwoBytes(VERSION);
-    writeTwoBytes(BITFLAG);
-    writeTwoBytes(METHOD);
+    writeFourBytes(CENTRAL_FILE_HEADER); // central directory header signature
+    writeTwoBytes(VERSION);              // version made by
+    writeTwoBytes(VERSION);              // version needed
+    writeTwoBytes(BITFLAG);              // flags
+    writeTwoBytes(METHOD);               // compression method
     
     writeTwoBytes(e.modTime);            // last mod time    
     writeTwoBytes(e.modDate);            // last mod date
@@ -162,10 +160,10 @@ public class ZipOutputStream extends DeflaterOutputStream {
   private void writeEndofCentralDirectory(int offset) throws IOException {
     short numEntries = (short) entries.size();
     writeFourBytes(END_OF_CENTRAL_DIRECTORY_SIG);  // end of central directory signature
-    writeTwoBytes(0);                              // 
-    writeTwoBytes(0);
-    writeTwoBytes(numEntries);
-    writeTwoBytes(numEntries);
+    writeTwoBytes(0);                              // disk number
+    writeTwoBytes(0);                              // disk number where central dir starts
+    writeTwoBytes(numEntries);                     // number of entries on this disk
+    writeTwoBytes(numEntries);                     // number of entries in central dir
     writeFourBytes(sizeOfCentralDirectory);        // length of central directory
     writeFourBytes(offset);                        // offset of central directory
     writeTwoBytes(0);                              // length of added comments (not used)
@@ -173,11 +171,11 @@ public class ZipOutputStream extends DeflaterOutputStream {
   }
   
   public void close() throws IOException {
-    int offset = bytesWritten;
+    int centralDirOffset = bytesWritten;
     for (ZipEntry e : entries)
       writeCentralDirectoryHeader(e);
-    writeEndofCentralDirectory(offset);
-    System.out.println("offset " + offset);
+    writeEndofCentralDirectory(centralDirOffset);
+    System.out.println("offset " + centralDirOffset);
     System.out.println("Close " + bytesWritten);
   }
   
@@ -194,13 +192,8 @@ public class ZipOutputStream extends DeflaterOutputStream {
   }
 
   private int writeVariableByteLength(String text) throws IOException {
-    try {
-      byte[] bytes = text.getBytes("UTF-8");
-      out.write(bytes, 0, bytes.length);
-      return bytes.length;
-    } catch (Exception ex) {
-      System.out.println("Unsupported byte encoding");
-    }
-    return 0;
+    byte[] bytes = text.getBytes("UTF-8");
+    out.write(bytes, 0, bytes.length);
+    return bytes.length;
   }  
 }

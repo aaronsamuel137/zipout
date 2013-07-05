@@ -1,7 +1,5 @@
 import java.util.Calendar;
 import java.util.Date;
-import java.util.zip.CRC32;
-
 
 public class ZipEntry {
   String name;
@@ -31,8 +29,6 @@ public class ZipEntry {
     uncompSize = 0;
     crc = 0;
     offset = 0;
-    //CRC32 newCRCvalue = new CRC32();
-    //crc = (int) newCRCvalue.getValue();
   }
 
   //Method to return name of the file
