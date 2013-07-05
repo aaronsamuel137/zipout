@@ -24,25 +24,25 @@ public class JavaZip
 		byte[] buffer = new byte[1024];
 		String workingDir = System.getProperty("user.dir");
 		File workingDirFile = new File(workingDir, "testFiles");
-		//File output = new File(workingDir, "Output.txt");
+
 		File testFile = new File(workingDir, "test.txt");
 		File testFile2 = new File(workingDir, "test2.txt");
 		File testFile3 = new File(workingDir, "test3.txt");
 		File testFile4 = new File(workingDir, "test4.txt");
 
-		//List<File> testFiles = new ArrayList<File>();
-		//testFiles.add(output);
-		//testFiles.add(testFile);
-		//testFiles.add(testFile2);
-		//testFiles.add(testFile3);
-		//testFiles.add(testFile4);
+		List<File> testFiles = new ArrayList<File>();
+		testFiles.add(testFile);
+		testFiles.add(testFile2);
+		testFiles.add(testFile3);
+		testFiles.add(testFile4);
 
-		/*for (File f : testFiles) {
+
+		for (File f : testFiles) {
 			if (f.exists())
 			  try {
 			    f.delete();
 			  } catch (Exception e) {}
-		}*/
+		}
 		
 		writeTestFile(testFile, TEST1);
 		writeTestFile(testFile2, TEST2);
