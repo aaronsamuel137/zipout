@@ -17,6 +17,7 @@ public class JavaZip
 	private static final String TEST1 = "this is a test";
 	private static final String TEST2 = "this is a test, a much\nmore extensive test";
 	private static final String TEST3 = "this is a test, a much\nmore extensive test! HURAAH!";
+	private static final String TEST4 = "this akwerlthwailt!";
 
 	public static void main(String[] args)
 	{
@@ -25,11 +26,13 @@ public class JavaZip
 		File testFile = new File(workingDir, "test.txt");
 		File testFile2 = new File(workingDir, "test2.txt");
 		File testFile3 = new File(workingDir, "test3.txt");
+		File testFile4 = new File(workingDir, "test4.txt");
 
 		List<File> testFiles = new ArrayList<File>();
 		testFiles.add(testFile);
 		testFiles.add(testFile2);
 		testFiles.add(testFile3);
+		testFiles.add(testFile4);
 
 		for (File f : testFiles) {
 			if (f.exists())
@@ -41,6 +44,7 @@ public class JavaZip
 		writeTestFile(testFile, TEST1);
 		writeTestFile(testFile2, TEST2);
 		writeTestFile(testFile3, TEST3);
+		writeTestFile(testFile4, TEST4);
 		
 		File outputFile = new File(workingDir, "java.zip");
 		if (outputFile.exists()) {

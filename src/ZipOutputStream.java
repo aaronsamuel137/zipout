@@ -115,13 +115,12 @@ public class ZipOutputStream extends DeflaterOutputStream {
       deflate();
     }
     deflater.dispose();
-
-    bytesWritten += length;
   }
 
   private void deflate() throws IOException {
     int len = deflater.deflate(buffer, 0, buffer.length);
     currentEntry.compSize = len;
+    bytesWritten += len;
     if (len > 0)
       out.write(buffer, 0 , len);
   }
