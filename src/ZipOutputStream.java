@@ -30,7 +30,6 @@ public class ZipOutputStream extends DeflaterOutputStream {
   
   private int bytesWritten;
   private int sizeOfCentralDirectory;
-  private boolean closed = false;
   private byte[] buffer;
 
   public ZipOutputStream(OutputStream outStream, int bufferSize) {
@@ -45,15 +44,8 @@ public class ZipOutputStream extends DeflaterOutputStream {
   public ZipOutputStream(OutputStream outStream) {
     this(outStream, 4 * 1024);
   }
-
-  private void ensureOpen() throws IOException {
-    if (closed) {
-      throw new IOException("Closed");
-    }
-  }
   
   public void putNextEntry(ZipEntry z) throws IOException {
-    ensureOpen();
     z.offset = bytesWritten;
     currentEntry = z;
     entries.add(z);
@@ -61,7 +53,6 @@ public class ZipOutputStream extends DeflaterOutputStream {
   }
   
   public void closeEntry() throws IOException {
-    ensureOpen();
     crc.reset();
     writeDataDescripter(currentEntry);
   }
