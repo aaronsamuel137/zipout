@@ -11,22 +11,22 @@ import java.util.zip.Deflater;
 import java.io.BufferedOutputStream;
 
 public class ZipOutputStream extends DeflaterOutputStream {
-  private static final int SIGNATURE = 0x04034b50;
-  private static final short VERSION = 20;
-  private static final short BITFLAG = 8;//0x0808;
-  private static final short METHOD = 8;
-  private static final int CENTRAL_FILE_HEADER = 0x02014b50;
-  private static final int DATA_DESCRIPTER_HEADER = 0x08074b50;
+  private static final int SIGNATURE =                    0x04034b50;
+  private static final short VERSION =                    20;
+  private static final short BITFLAG =                    8;//0x0808;
+  private static final short METHOD =                     8;
+  private static final int CENTRAL_FILE_HEADER =          0x02014b50;
+  private static final int DATA_DESCRIPTER_HEADER =       0x08074b50;
   private static final int END_OF_CENTRAL_DIRECTORY_SIG = 0x06054b50;
-  private static final int DEFAULT_LEVEL = 6;
+  private static final int DEFAULT_LEVEL =                6;
   
   
   private final OutputStream out;
   private DeflaterOutputStream deflaterStream;
   private Deflater deflater = null;
-  private List<EntryOffset> entries;
+  private List<ZipEntry> entries;
   private CRC32 crc;
-  private EntryOffset currentEntry;
+  private ZipEntry currentEntry;
   
   private int bytesWritten;
   private int sizeOfCentralDirectory;
@@ -37,7 +37,7 @@ public class ZipOutputStream extends DeflaterOutputStream {
     super(outStream);
     out = outStream;
     bytesWritten = 0;
-    entries = new ArrayList<EntryOffset>();
+    entries = new ArrayList<ZipEntry>();
     sizeOfCentralDirectory = 0;
     buffer = new byte[bufferSize];
   }
@@ -54,9 +54,9 @@ public class ZipOutputStream extends DeflaterOutputStream {
   
   public void putNextEntry(ZipEntry z) throws IOException {
     ensureOpen();
-    EntryOffset entry = new EntryOffset(bytesWritten, z);
-    currentEntry = entry;
-    entries.add(entry);
+    z.offset = bytesWritten;
+    currentEntry = z;
+    entries.add(z);
     writeLocalHeader(z);
   }
   
@@ -91,19 +91,19 @@ public class ZipOutputStream extends DeflaterOutputStream {
     bytesWritten += 30 + len;
   }
   
-  private void writeDataDescripter(EntryOffset currentEntry) throws IOException {
+  private void writeDataDescripter(ZipEntry currentEntry) throws IOException {
     writeFourBytes(DATA_DESCRIPTER_HEADER);        // data descripter header
-    writeFourBytes(currentEntry.entry.crc);        // crc value
-    writeFourBytes(currentEntry.entry.compSize);   // compressed size
-    writeFourBytes(currentEntry.entry.uncompSize); // uncompressed size
+    writeFourBytes(currentEntry.crc);        // crc value
+    writeFourBytes(currentEntry.compSize);   // compressed size
+    writeFourBytes(currentEntry.uncompSize); // uncompressed size
     bytesWritten += 16;
   }
   
   public void write(byte[] b, int offset, int length) throws IOException {
-    currentEntry.entry.uncompSize = length;
+    currentEntry.uncompSize = length;
     crc = new CRC32();
     crc.update(b, offset, length);
-    currentEntry.entry.crc = (int) crc.getValue();
+    currentEntry.crc = (int) crc.getValue();
     
     deflater = new Deflater(DEFAULT_LEVEL, true);
     deflater.setInput(b, offset, length);
@@ -123,25 +123,25 @@ public class ZipOutputStream extends DeflaterOutputStream {
 
   private void deflate() throws IOException {
     int len = deflater.deflate(buffer, 0, buffer.length);
-    currentEntry.entry.compSize = len;
+    currentEntry.compSize = len;
     if (len > 0)
       out.write(buffer, 0 , len);
   }
   
-  private void writeCentralDirectoryHeader(EntryOffset e) throws IOException {
+  private void writeCentralDirectoryHeader(ZipEntry e) throws IOException {
     writeFourBytes(CENTRAL_FILE_HEADER);
     writeTwoBytes(VERSION);
     writeTwoBytes(VERSION);
     writeTwoBytes(BITFLAG);
     writeTwoBytes(METHOD);
     
-    writeTwoBytes(e.entry.modTime);            // last mod time    
-    writeTwoBytes(e.entry.modDate);            // last mod date
-    writeFourBytes(e.entry.crc);               // crc
-    writeFourBytes(e.entry.compSize);          // compressed size
-    writeFourBytes(e.entry.uncompSize);        // uncompressed size
+    writeTwoBytes(e.modTime);            // last mod time    
+    writeTwoBytes(e.modDate);            // last mod date
+    writeFourBytes(e.crc);               // crc
+    writeFourBytes(e.compSize);          // compressed size
+    writeFourBytes(e.uncompSize);        // uncompressed size
    
-    writeTwoBytes(e.entry.getName().length()); // file name length
+    writeTwoBytes(e.getName().length()); // file name length
     
     writeTwoBytes(0); // extra field length is 0 since we didn't use
     writeTwoBytes(0); // comment length is 0 too
@@ -172,7 +172,7 @@ public class ZipOutputStream extends DeflaterOutputStream {
   
   public void close() throws IOException {
     int offset = bytesWritten;
-    for (EntryOffset e : entries)
+    for (ZipEntry e : entries)
       writeCentralDirectoryHeader(e);
     writeEndofCentralDirectory(offset);
     System.out.println("offset " + offset);
