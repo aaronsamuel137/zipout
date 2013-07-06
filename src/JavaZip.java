@@ -10,6 +10,9 @@ import java.io.InputStream;
 import java.io.BufferedInputStream;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Set;
+import java.util.HashSet;
 
 
 // Our code must be able to do this
@@ -25,15 +28,31 @@ public class JavaZip
 	
 	public static void main(String[] args)
 	{
-		File workingDirFile = new File(workingDir, "testFiles");
+		String testDir;
+		File[] testFiles;
+		File workingDirFile = null;
+		boolean useDefaultTest = false;
+		File output = initOutputFile("java.zip");
 
-		//File[] testDirFiles = workingDirFile.listFiles();
-		List<File> testFiles = createTestFiles();
-		File[] testArray = testFiles.toArray(new File[testFiles.size()]);
+		Set<String> cmdArgs = new HashSet<String>(Arrays.asList(args));
 
-		File output1 = initOutputFile("java.zip");
+		if (cmdArgs.contains("mdump"))
+			testFiles = (new File(workingDir, "testMdump")).listFiles();
+		else if (cmdArgs.contains("logs"))
+			testFiles = (new File(workingDir, "testFiles")).listFiles();
+		else {
+      List<File> testers = createTestFiles();
+			testFiles = testers.toArray(new File[testers.size()]);
+		}
 
-		writeWithOneParam(testArray, output1);		
+    if (cmdArgs.contains("one")) {
+    	System.out.println("\nzipping with function write(int b)...");
+    	writeWithOneParam(testFiles, output);
+    }
+    else {
+    	System.out.println("\nzipping with function write(byte[] b, int offset, int length)...");
+    	write(testFiles, output);
+    }
 	}
 	
 	public static void writeTestFile(File file, String text) {
@@ -51,7 +70,7 @@ public class JavaZip
 	  }
 	}
 	
-	public static List<File> createTestFiles () {
+	public static List<File> createTestFiles() {
 	  File testFile = new File(workingDir, "test.txt");
 		File testFile2 = new File(workingDir, "test2.txt");
 		File testFile3 = new File(workingDir, "test3.txt");
@@ -95,11 +114,13 @@ public class JavaZip
 			ZipOutputStream outZip = new ZipOutputStream(outFile);
 
 			InputStream inFile;
-			System.out.print("writing files, please wait");
 
-			for (File f : fileList) {		
+			long startTime = System.currentTimeMillis();
+			for (File f : fileList) {
+				String name = f.getName();
+				System.out.print("zipping " + name + "...\t\t");
 				inFile = new BufferedInputStream(new FileInputStream(f));
-				ZipEntry entry = new ZipEntry(f.getName());
+				ZipEntry entry = new ZipEntry(name);
 				outZip.putNextEntry(entry);
 			
 				int inchar = inFile.read();
@@ -109,8 +130,12 @@ public class JavaZip
         }
 				inFile.close();
 				outZip.closeEntry();
+				System.out.print("done\n");
 			}
 			outZip.close();
+			long endTime = System.currentTimeMillis();
+			System.out.println("finished in " + ((endTime - startTime) / 1000.0) + 
+												 " seconds");
 		}
 		catch (IOException e) {
 		  e.printStackTrace();
@@ -123,9 +148,11 @@ public class JavaZip
 			ZipOutputStream outZip = new ZipOutputStream(outFile);
 
 			InputStream inFile;
-			System.out.print("writing files, please wait");
 
-			for (File f : fileList) {		
+			long startTime = System.currentTimeMillis();
+			for (File f : fileList) {
+				String name = f.getName();
+				System.out.print("zipping " + name + "...\t\t");
 				inFile = new FileInputStream(f);					
 				ZipEntry entry = new ZipEntry(f.getName());
 				outZip.putNextEntry(entry);
@@ -137,8 +164,13 @@ public class JavaZip
 				}
 				inFile.close();
 				outZip.closeEntry();
+				System.out.print("done\n");
 			}
 			outZip.close();
+			long endTime = System.currentTimeMillis();
+			System.out.println("finished in " + ((endTime - startTime) / 1000.0) + 
+												 " seconds");
+
 		}
 		catch (IOException e) {
 		  e.printStackTrace();

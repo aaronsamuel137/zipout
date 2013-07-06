@@ -1,4 +1,4 @@
-package java.util.zip;
+//package java.util.zip;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -38,12 +38,15 @@ public class ZipOutputStream extends DeflaterOutputStream {
   private int bytesWritten;
   private int sizeOfCentralDirectory;
   private byte[] buffer;
+  private int bufferIndex;
+  private int bufferSize;
 
-  public ZipOutputStream(OutputStream outStream, int bufferSize) {
+  public ZipOutputStream(OutputStream outStream, int buffSize) {
     super(outStream);
     out = outStream;
     bytesWritten = 0;
     sizeOfCentralDirectory = 0;
+    bufferSize = buffSize;
     entries = new ArrayList<ZipEntry>();
     buffer = new byte[bufferSize];
     deflater = new Deflater(DEFAULT_LEVEL, true);
@@ -61,6 +64,11 @@ public class ZipOutputStream extends DeflaterOutputStream {
   }
   
   public void closeEntry() throws IOException {
+    if (bufferIndex != 0) {
+      write(buffer, 0, bufferIndex);
+      bufferIndex = 0;
+    }
+
     deflater.finish();
     while (!deflater.finished()) {
       deflate();
@@ -116,9 +124,12 @@ public class ZipOutputStream extends DeflaterOutputStream {
   }
 
   public void write(int b) throws IOException {
-    byte[] buf = new byte[1];
-    buf[0] = (byte)(b & 0xff);
-    write(buf, 0, 1);
+    buffer[bufferIndex] = (byte)(b & 0xff);
+    bufferIndex += 1;
+    if (bufferIndex == bufferSize) {
+      write(buffer, 0, bufferIndex);
+      bufferIndex = 0;
+    }
   }
 
   private void deflate() throws IOException {
