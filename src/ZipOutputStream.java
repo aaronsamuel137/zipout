@@ -10,6 +10,8 @@ import java.util.zip.DeflaterOutputStream;
 import java.util.zip.Deflater;
 import java.io.BufferedOutputStream;
 
+import java.io.File;
+
 
 /**
  *  An as simple as possible implementation of ZipOutputStream
@@ -29,17 +31,20 @@ public class ZipOutputStream extends DeflaterOutputStream {
   private static final int DEFAULT_LEVEL =                6;
   
   private final OutputStream out;
-  private DeflaterOutputStream deflaterStream;
   private Deflater deflater;
   private List<ZipEntry> entries;
   private CRC32 crc = new CRC32();
-  private ZipEntry currentEntry;
-  
-  private int bytesWritten;
-  private int sizeOfCentralDirectory;
-  private byte[] buffer;
+  private ZipEntry currentEntry;        // holder for current entry
+  private int bytesWritten;             // a counter for total bytes written
+  private int sizeOfCentralDirectory;   // a counter for central dir size
+  private byte[] outputBuffer;          // output buffer for deflater
+  private int bufferSize;               // output buffer size
+
+  // these are used for the function write(int b)
+  // using a buffer here provides ~12X speed increase
+  private byte[] inputBuffer = new byte[1024];
   private int bufferIndex;
-  private int bufferSize;
+  
 
   public ZipOutputStream(OutputStream outStream, int buffSize) {
     super(outStream);
@@ -48,7 +53,7 @@ public class ZipOutputStream extends DeflaterOutputStream {
     sizeOfCentralDirectory = 0;
     bufferSize = buffSize;
     entries = new ArrayList<ZipEntry>();
-    buffer = new byte[bufferSize];
+    outputBuffer = new byte[bufferSize];
     deflater = new Deflater(DEFAULT_LEVEL, true);
   }
 
@@ -65,7 +70,7 @@ public class ZipOutputStream extends DeflaterOutputStream {
   
   public void closeEntry() throws IOException {
     if (bufferIndex != 0) {
-      write(buffer, 0, bufferIndex);
+      write(inputBuffer, 0, bufferIndex);
       bufferIndex = 0;
     }
 
@@ -90,7 +95,7 @@ public class ZipOutputStream extends DeflaterOutputStream {
     writeTwoBytes(e.modDate);        // last modified date   
     writeFourBytes(0);               // CRC is 0 for local header
 
-    // with default flag settings, the compressed and uncompressed size
+    // with default flag settings (bit 3 set) the compressed and uncompressed size
     // is written here as 0 and written correctly in the data descripter
     writeFourBytes(0);               // compressed size
     writeFourBytes(0);               // uncompressed size
@@ -114,6 +119,9 @@ public class ZipOutputStream extends DeflaterOutputStream {
   }
   
   public void write(byte[] b, int offset, int length) throws IOException {
+    if (offset < 0 || length < 0 || b.length - (offset + length) < 0)
+      throw new IndexOutOfBoundsException();
+
     currentEntry.uncompSize += length;
     crc.update(b, offset, length);
     currentEntry.crc = (int) crc.getValue();
@@ -124,20 +132,20 @@ public class ZipOutputStream extends DeflaterOutputStream {
   }
 
   public void write(int b) throws IOException {
-    buffer[bufferIndex] = (byte)(b & 0xff);
+    inputBuffer[bufferIndex] = (byte)(b & 0xff);
     bufferIndex += 1;
-    if (bufferIndex == bufferSize) {
-      write(buffer, 0, bufferIndex);
+    if (bufferIndex == 1024) {
+      write(inputBuffer, 0, bufferIndex);
       bufferIndex = 0;
     }
   }
 
   private void deflate() throws IOException {
-    int len = deflater.deflate(buffer, 0, buffer.length);
+    int len = deflater.deflate(outputBuffer, 0, outputBuffer.length);
     currentEntry.compSize += len;
     bytesWritten += len;
     if (len > 0)
-      out.write(buffer, 0 , len);
+      out.write(outputBuffer, 0, len);
   }
   
   private void writeCentralDirectoryHeader(ZipEntry e) throws IOException {
