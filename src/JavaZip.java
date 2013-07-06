@@ -134,4 +134,46 @@ public class JavaZip
 			}
 			outZip.close();
 			long endTime = System.currentTimeMillis();
-			System.out.print
+			System.out.println("finished in " + ((endTime - startTime) / 1000.0) + 
+												 " seconds");
+		}
+		catch (IOException e) {
+		  e.printStackTrace();
+		}
+	}
+
+	public static void write(File[] fileList, File outputFile) {
+		try {
+			FileOutputStream outFile = new FileOutputStream(outputFile);
+			ZipOutputStream outZip = new ZipOutputStream(outFile);
+
+			InputStream inFile;
+
+			long startTime = System.currentTimeMillis();
+			for (File f : fileList) {
+				String name = f.getName();
+				System.out.print("zipping " + name + "...\t\t");
+				inFile = new FileInputStream(f);					
+				ZipEntry entry = new ZipEntry(f.getName());
+				outZip.putNextEntry(entry);
+			
+				int len = inFile.read(buffer);
+				while (len > 0) {
+					outZip.write(buffer, 0, len);
+					len = inFile.read(buffer);
+				}
+				inFile.close();
+				outZip.closeEntry();
+				System.out.print("done\n");
+			}
+			outZip.close();
+			long endTime = System.currentTimeMillis();
+			System.out.println("finished in " + ((endTime - startTime) / 1000.0) + 
+												 " seconds");
+
+		}
+		catch (IOException e) {
+		  e.printStackTrace();
+		}
+	}
+}
