@@ -10,8 +10,8 @@ public class ZipOutputStreamTest
 	private static final String TEST3_CONTENTS = "74 68 69 73 20 69 73 20 61 20 74 65 73 74";
 	private static final String TEST4_CONTENTS = "01110100 01101000 01101001 01110011 00100000 01101001 01110011 00100000 01100001 00100000 01110100 01100101 01110011 01110100";
 	
-	private static final String ONE_PARAM_ZIP = "zosTest1.zip";
-	private static final String THREE_PARAM_ZIP = "zosTest3.zip";
+	private static final String ONE_PARAM_ZIP_NAME = "zosTest1.zip";
+	private static final String THREE_PARAM_ZIP_NAME = "zosTest3.zip";
 
 	private static final Map<String, String> FILES_CONTENTS;
 	static
@@ -24,75 +24,23 @@ public class ZipOutputStreamTest
 		FILES_CONTENTS = Collections.unmodifiableMap(m);
 	}
 
-	private static final boolean ONE_PARAM_WRITE = true;
-	private static final boolean THREE_PARAM_WRITE = false;
+	private static final boolean USE_ONE_PARAM_WRITE = true;
+	private static final boolean USE_THREE_PARAM_WRITE = false;
 	private static byte[] buffer = new byte[1024];
-	private List<File> testFiles;
-	private File outputFile;
+	private File outputZip;
+	private int numTestFiles = 0;
+	private int numZipFiles = 0;
 
 	public static void main(String[] args)
 	{
-		// Create the test files
-		createTestFiles();
 		// Test 1-param write function
-		createZip(ONE_PARAM_WRITE);
-		// useOneParamWrite();
-		verifyContents(ONE_PARAM_ZIP);
+		createZip(USE_ONE_PARAM_WRITE);
+		verifyContents(ONE_PARAM_ZIP_NAME);
 		// Test 3-param write function
-		createZip(THREE_PARAM_WRITE);
-		// useThreeParamWrite();
-		verifyContents(THREE_PARAM_ZIP);
-		// Remove test files
+		createZip(USE_THREE_PARAM_WRITE);
+		verifyContents(THREE_PARAM_ZIP_NAME);
+		// Remove the created zip files
 		cleanUp();
-	}
-
-	private void createTestFiles()
-	{
-		// Create test files with known contents
-		File f1 = new File(TEST1);
-		File f2 = new File(TEST2);
-		File f3 = new File(TEST3);
-		File f4 = new File(TEST4);
-
-		writeFileContents(f1, TEST1_CONTENTS);
-		writeFileContents(f2, TEST2_CONTENTS);
-		writeFileContents(f3, TEST3_CONTENTS);
-		writeFileContents(f4, TEST4_CONTENTS);
-
-		testFiles = new ArrayList<File>();
-		testFiles.add(f1);
-		testFiles.add(f2);
-		testFiles.add(f3);
-		testFiles.add(f4);
-	}
-
-	private void writeFileContents(File file, String contents)
-	{
-		try
-		{
-			FileWriter fw = new FileWriter(file.getAbsoluteFile());
-			BufferedWriter bw = new BufferedWriter(fw);
-
-			bw.write(contents);
-		}
-		catch (Exception e)
-		{
-			throw new RuntimeException(e);
-		}
-		finally
-		{
-			try
-			{
-				bw.close();
-				fw.close();
-			}
-			catch (Exception e)
-			{
-				throw new RuntimeException(e);
-			}
-				
-
-		}
 	}
 
 	private void createZip(boolean useOneParam)
@@ -100,53 +48,48 @@ public class ZipOutputStreamTest
 		try
 		{
 			// Create a zip file for this test
-			outputFile = useOneParam ? new File(ONE_PARAM_ZIP) : new File(THREE_PARAM_ZIP);
+			outputZip = useOneParam ? new File(ONE_PARAM_ZIP_NAME) : new File(THREE_PARAM_ZIP_NAME);
 
 			// Prepare the streams
-			FileOutputStream outputStream = new FileOutputStream(outputFile);
+			FileOutputStream outputStream = new FileOutputStream(outputZip);
 			ZipOutputStream zipContents = new ZipOutputStream(outputStream);
-			InputStream inputFile;
 
-			// Zip the files
+			// Zip the file contents (convert directly from string to bytes)
 			long startTime = System.currentTimeMillis();
-			for (File f : testFiles)
+			for (Map.Entry<String, String> f : FILES_CONTENTS.entrySet())
 			{
-				String name = f.getName();
+				numTestFiles += 1;
+				String name = f.getKey();
+				String contents = f.getValue();
+
 				System.out.println("Zipping " + name + "...");
-				inputFile = new BufferedInputStream(new FileInputStream(f));
-				ZipEntry entry = new ZipEntry(f.getName());
+				ZipEntry entry = new ZipEntry(name);
 				zipContents.putNextEntry(entry);
+
+				byte[] bytesToWrite = contents.getBytes();
 
 				if (useOneParam)
 				{
 					// Use the 1-parameter write method; takes a single byte
-					int inChar = inputFile.read();
-					while (inChar != -1)
+					for (int i = 0; i < bytesToWrite.length; i++)
 					{
-						zipContents.write(inChar);
-						inChar = inputFile.read();
+						zipContents.write(bytesToWrite[i]);
 					}
 				}
 				else
 				{
-					// Use the 3-parameter write method; takes a buffer, offset, and length
-					int len = inputFile.read(buffer);
-					while (len > 0)
-					{
-						zipContents.write(buffer, 0, len);
-						len = inputFile.read(buffer);
-					}
+					// Use 3-parameter write method; takes a buffer, offset, and length
+					zipContents.write(bytesToWrite, 0 , bytesToWrite.length);
 				}
 
 				// Done with this file
-				inputFile.close();
 				zipContents.closeEntry();
 				System.out.println("Done");
 			}
 
 			// All files have been written
 			long endTime = System.currentTimeMillis();
-			System.out.println("Finished " + ONE_PARAM_ZIP + " in " + ((endTime - startTime) / 1000.0) + " seconds");
+			System.out.println("Finished " + outputZip.getName() + " in " + ((endTime - startTime) / 1000.0) + " seconds");
 		}
 		catch (Exception e)
 		{
@@ -156,7 +99,6 @@ public class ZipOutputStreamTest
 		{
 			try
 			{
-				inputFile.close();
 				zipContents.close();
 				outputStream.close();
 			}
@@ -171,8 +113,6 @@ public class ZipOutputStreamTest
 	{
 		try
 		{
-			int numTestFiles = testFiles.size();
-			int numZipFiles = 0;
 			String line;
 			String contents;
 
@@ -200,7 +140,7 @@ public class ZipOutputStreamTest
 			}
 			zf.close();
 
-			// Asser that the zip contained the correct number of files
+			// Assert that the zip contained the correct number of files
 			assert(numZipFiles == numTestFiles);
 		}
 		catch (Exception e)
@@ -225,18 +165,9 @@ public class ZipOutputStreamTest
 	{
 		try
 		{
-			// Delete the test files
-			for (File f : testFiles)
-			{
-				if (f.exists())
-				{
-					f.delete();
-				}
-			}
-
 			// Delete the zip files
-			File zip1 = new File(ONE_PARAM_ZIP);
-			File zip2 = new File(THREE_PARAM_ZIP);
+			File zip1 = new File(ONE_PARAM_ZIP_NAME);
+			File zip2 = new File(THREE_PARAM_ZIP_NAME);
 			if (zip1.exists())
 			{
 				zip1.delete();
