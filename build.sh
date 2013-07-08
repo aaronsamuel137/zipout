@@ -5,4 +5,4 @@ cd build
 rm *.class
 javac -cp classpath.jar:. -bootclasspath classpath.jar JavaZip.java
 rm *.java
-avian JavaZip
+avian JavaZip $1 $2

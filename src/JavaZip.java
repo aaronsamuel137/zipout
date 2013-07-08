@@ -22,7 +22,7 @@ public class JavaZip
 	private static final String TEST2 = "this is a test, a much\nmore extensive test";
 	private static final String TEST3 = "this is a test, a much\nmore extensive test! HURAAH!";
 	private static final String TEST4 = "this akwerlthwailt!";
-	private static final String workingDir = System.getProperty("user.dir");
+	public static final String workingDir = System.getProperty("user.dir");
 
 	private static byte[] buffer = new byte[1024];
 	
