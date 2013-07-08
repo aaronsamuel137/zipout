@@ -35,7 +35,6 @@ import java.util.Date;
 
 public class ZipEntry {
   String name;
-  short reqVersion = -1;
   short compressionMethod = -1;
   int modTimeDate = -1;
   long millisTime = -1;
@@ -58,35 +57,12 @@ public class ZipEntry {
   public boolean isDirectory() {
     return getName().endsWith("/");
   }
-
-  /**
-   * Method setRequiredVersion:
-   *
-   * Method to set the minimum version required to open the zip file
-   * Valid values for the compression method are the numbers 1.0 to 10.0
-   *
-   * @author Christopher Jordan
-   */
-  private boolean setRequiredVersion(float versionFloat){
-    //Check for valid version numbers
-    if (versionFloat < 1 || versionFloat > 100){
-      return false;
-    }
-    
-    //Convert to short value for storage
-    versionFloat = versionFloat * 10;
-    short versionShort = (short)versionFloat;
-    
-    //Set value of version
-    reqVersion = versionShort;
-    return true;
-  }
   
   //Method to set the compression method for the file
   //Valid methods are "stored" = 0 or "deflated" = 8
-  public void setMethod(short compMethod){
+  public void setMethod(int compMethod){
     if (compMethod == 0 || compMethod == 8){
-      this.compressionMethod = compMethod;
+      this.compressionMethod = (short)compMethod;
     }
   }
 
@@ -111,8 +87,6 @@ public class ZipEntry {
   public void setTime(long currentTime){
     modTimeDate = computeDOSDateTime(currentTime);
     millisTime = currentTime;
-    System.out.println(currentTime);
-    System.out.println(Integer.toHexString(modTimeDate));
   }
 
   public long getTime(){
