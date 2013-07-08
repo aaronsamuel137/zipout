@@ -1,3 +1,13 @@
+/* Copyright (c) 2008-2013, Avian Contributors
+
+  Permission to use, copy, modify, and/or distribute this software
+  for any purpose with or without fee is hereby granted, provided
+  that the above copyright notice and this permission notice appear
+  in all copies.
+
+  There is NO WARRANTY for this software.  See license.txt for
+  details. */
+
 //package java.util.zip;
 
 import java.io.IOException;
@@ -8,9 +18,6 @@ import java.util.List;
 import java.util.zip.CRC32;
 import java.util.zip.DeflaterOutputStream;
 import java.util.zip.Deflater;
-import java.io.BufferedOutputStream;
-
-import java.io.File;
 
 
 /**
@@ -19,6 +26,11 @@ import java.io.File;
  *  All hardcoded defaults match the defaults for openJDK,
  *  including PKZip version, bit flags set, compression level, etc
  *  
+ *  @author David Chau
+ *  @author Aaron Davis
+ *  @author Christopher Jordan
+ *  @author Riley Moses
+ *
  */
 public class ZipOutputStream extends DeflaterOutputStream {
   private static final int SIGNATURE =                    0x04034b50;
@@ -30,35 +42,22 @@ public class ZipOutputStream extends DeflaterOutputStream {
   private static final int END_OF_CENTRAL_DIRECTORY_SIG = 0x06054b50;
   private static final int DEFAULT_LEVEL =                6;
   
-  private final OutputStream out;
-  private Deflater deflater;
   private List<ZipEntry> entries;
   private CRC32 crc = new CRC32();
   private ZipEntry currentEntry;        // holder for current entry
   private int bytesWritten;             // a counter for total bytes written
   private int sizeOfCentralDirectory;   // a counter for central dir size
-  private byte[] outputBuffer;          // output buffer for deflater
-  private int bufferSize;               // output buffer size
 
-  // these are used for the function write(int b)
-  // using a buffer here provides ~12X speed increase
+  // these are used for the function write(int b) to provide a speed increase
   private byte[] inputBuffer = new byte[1024];
   private int bufferIndex;
   
 
-  public ZipOutputStream(OutputStream outStream, int buffSize) {
-    super(outStream);
-    out = outStream;
+  public ZipOutputStream(OutputStream outStream) {
+    super(outStream, new Deflater(DEFAULT_LEVEL, true));
     bytesWritten = 0;
     sizeOfCentralDirectory = 0;
-    bufferSize = buffSize;
     entries = new ArrayList<ZipEntry>();
-    outputBuffer = new byte[bufferSize];
-    deflater = new Deflater(DEFAULT_LEVEL, true);
-  }
-
-  public ZipOutputStream(OutputStream outStream) {
-    this(outStream, 4 * 1024);
   }
   
   public void putNextEntry(ZipEntry e) throws IOException {
@@ -105,7 +104,7 @@ public class ZipOutputStream extends DeflaterOutputStream {
     writeTwoBytes(0);
 
     // write file name, return the number of bytes written
-    int len = writeVariableByteLength(e.getName());
+    int len = writeUTF8(e.getName());
 
     bytesWritten += 30 + len;
   }
@@ -141,11 +140,11 @@ public class ZipOutputStream extends DeflaterOutputStream {
   }
 
   private void deflate() throws IOException {
-    int len = deflater.deflate(outputBuffer, 0, outputBuffer.length);
+    int len = deflater.deflate(buffer, 0, buffer.length);
     currentEntry.compSize += len;
     bytesWritten += len;
     if (len > 0)
-      out.write(outputBuffer, 0, len);
+      out.write(buffer, 0, len);
   }
   
   private void writeCentralDirectoryHeader(ZipEntry e) throws IOException {
@@ -172,7 +171,7 @@ public class ZipOutputStream extends DeflaterOutputStream {
 
     writeFourBytes((int) e.offset);      // relative offset of local header
 
-    int len = writeVariableByteLength(e.getName());
+    int len = writeUTF8(e.getName());
 
     bytesWritten += 46 + len;
     sizeOfCentralDirectory += 46 + len;
@@ -196,6 +195,7 @@ public class ZipOutputStream extends DeflaterOutputStream {
     for (ZipEntry e : entries)
       writeCentralDirectoryHeader(e);
     writeEndofCentralDirectory(centralDirOffset);
+    out.close();
   }
   
   private void writeTwoBytes(int bytes) throws IOException {
@@ -210,7 +210,7 @@ public class ZipOutputStream extends DeflaterOutputStream {
     out.write((bytes >> 24) & 0xff);
   }
 
-  private int writeVariableByteLength(String text) throws IOException {
+  private int writeUTF8(String text) throws IOException {
     byte[] bytes = text.getBytes("UTF-8");
     out.write(bytes, 0, bytes.length);
     return bytes.length;
