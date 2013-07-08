@@ -1,5 +1,5 @@
 *.class
-avian/
+avian*/
 .DS_Store
 .project
 .settings/
