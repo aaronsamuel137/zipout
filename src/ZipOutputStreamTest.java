@@ -24,6 +24,8 @@ public class ZipOutputStreamTest
 		FILES_CONTENTS = Collections.unmodifiableMap(m);
 	}
 
+	private static final boolean ONE_PARAM_WRITE = true;
+	private static final boolean THREE_PARAM_WRITE = false;
 	private static byte[] buffer = new byte[1024];
 	private List<File> testFiles;
 	private File outputFile;
@@ -33,10 +35,12 @@ public class ZipOutputStreamTest
 		// Create the test files
 		createTestFiles();
 		// Test 1-param write function
-		useOneParamWrite();
+		createZip(ONE_PARAM_WRITE);
+		// useOneParamWrite();
 		verifyContents(ONE_PARAM_ZIP);
 		// Test 3-param write function
-		useThreeParamWrite();
+		createZip(THREE_PARAM_WRITE);
+		// useThreeParamWrite();
 		verifyContents(THREE_PARAM_ZIP);
 		// Remove test files
 		cleanUp();
@@ -91,17 +95,16 @@ public class ZipOutputStreamTest
 		}
 	}
 
-	private void useOneParamWrite()
+	private void createZip(boolean useOneParam)
 	{
 		try
 		{
 			// Create a zip file for this test
-			outputFile = new File(ONE_PARAM_ZIP);
+			outputFile = useOneParam ? new File(ONE_PARAM_ZIP) : new File(THREE_PARAM_ZIP);
 
 			// Prepare the streams
 			FileOutputStream outputStream = new FileOutputStream(outputFile);
 			ZipOutputStream zipContents = new ZipOutputStream(outputStream);
-			
 			InputStream inputFile;
 
 			// Zip the files
@@ -111,75 +114,28 @@ public class ZipOutputStreamTest
 				String name = f.getName();
 				System.out.println("Zipping " + name + "...");
 				inputFile = new BufferedInputStream(new FileInputStream(f));
-				ZipEntry entry = new ZipEntry(name);
-				zipContents.putNextEntry(entry);
-
-				// Use the 1-parameter write method; takes a single byte
-				int inChar = inputFile.read();
-				while (inChar != -1)
-				{
-					zipContents.write(inChar);
-					inChar = inputFile.read();
-				}
-
-				// Done with this file
-				inputFile.close();
-				zipContents.closeEntry();
-				System.out.println("Done");
-			}
-
-			// All files have been written
-			long endTime = System.currentTimeMillis();
-			System.out.println("Finished " + ONE_PARAM_ZIP + " in " + ((endTime - startTime) / 1000.0) + " seconds");
-		}
-		catch (Exception e)
-		{
-			throw new RuntimeException(e);
-		}
-		finally
-		{
-			try
-			{
-				inputFile.close();
-				zipContents.close();
-				outputStream.close();
-			}
-			catch (Exception e)
-			{
-				throw new RuntimeException(e);
-			}
-		}
-	}
-
-	private void useThreeParamWrite()
-	{
-		try
-		{
-			// Create a zip file for this test
-			outputFile = new File(THREE_PARAM_ZIP);
-
-			// Prepare the streams
-			FileOutputStream outputStream = new FileOutputStream(outputFile);
-			ZipOutputStream zipContents = new ZipOutputStream(outputStream);
-			
-			InputStream inputFile;
-
-			// Zip the files
-			long startTime = System.currentTimeMillis();
-			for (File f : testFiles)
-			{
-				String name = f.getName();
-				System.out.println("Zipping " + name + "...");
-				inputFile = new FileInputStream(f);
 				ZipEntry entry = new ZipEntry(f.getName());
 				zipContents.putNextEntry(entry);
 
-				// Use the 3-parameter write method; takes a buffer, offset, and length
-				int len = inputFile.read(buffer);
-				while (len > 0)
+				if (useOneParam)
 				{
-					zipContents.write(buffer, 0, len);
-					len = inputFile.read(buffer);
+					// Use the 1-parameter write method; takes a single byte
+					int inChar = inputFile.read();
+					while (inChar != -1)
+					{
+						zipContents.write(inChar);
+						inChar = inputFile.read();
+					}
+				}
+				else
+				{
+					// Use the 3-parameter write method; takes a buffer, offset, and length
+					int len = inputFile.read(buffer);
+					while (len > 0)
+					{
+						zipContents.write(buffer, 0, len);
+						len = inputFile.read(buffer);
+					}
 				}
 
 				// Done with this file
