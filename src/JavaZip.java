@@ -153,7 +153,7 @@ public class JavaZip
 			for (File f : fileList) {
 				String name = f.getName();
 				System.out.print("zipping " + name + "...\t\t");
-				inFile = new FileInputStream(f);					
+				inFile = new BufferedInputStream(new FileInputStream(f));					
 				ZipEntry entry = new ZipEntry(f.getName());
 				outZip.putNextEntry(entry);
 			
