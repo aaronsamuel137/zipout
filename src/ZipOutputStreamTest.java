@@ -264,4 +264,35 @@ public class ZipOutputStreamTest
 			}
 		}
 	}
+
+	private void cleanUp()
+	{
+		try
+		{
+			// Delete the test files
+			for (File f : testFiles)
+			{
+				if (f.exists())
+				{
+					f.delete();
+				}
+			}
+
+			// Delete the zip files
+			File zip1 = new File(ONE_PARAM_ZIP);
+			File zip2 = new File(THREE_PARAM_ZIP);
+			if (zip1.exists())
+			{
+				zip1.delete();
+			}
+			if (zip2.exists())
+			{
+				zip2.delete();
+			}
+		}
+		catch (Exception e)
+		{
+			throw new RuntimeException(e);
+		}
+	}
 }
