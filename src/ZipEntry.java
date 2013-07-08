@@ -8,8 +8,6 @@
    There is NO WARRANTY for this software.  See license.txt for
    details. */
 
-//package java.util.zip;
-
 /**
  * Class ZipEntry:
  *
@@ -34,6 +32,7 @@
 import java.util.Calendar;
 import java.util.Date;
 
+
 public class ZipEntry {
   String name;
   short reqVersion = -1;
@@ -47,8 +46,7 @@ public class ZipEntry {
   
   public ZipEntry(String name) {
     this.name = name;
-    Date cDate = new Date();
-    setTime(cDate.getTime());
+    setTime(System.currentTimeMillis());
   }
 
   //Method to return name of the file
@@ -113,6 +111,8 @@ public class ZipEntry {
   public void setTime(long currentTime){
     modTimeDate = computeDOSDateTime(currentTime);
     millisTime = currentTime;
+    System.out.println(currentTime);
+    System.out.println(Integer.toHexString(modTimeDate));
   }
 
   public long getTime(){
