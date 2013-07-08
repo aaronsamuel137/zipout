@@ -222,10 +222,10 @@ public class ZipOutputStream extends DeflaterOutputStream {
   }
 
   private void finish() throws IOException {
-    /*deflater.finish();
+    deflater.finish();
     while (!deflater.finished()) {
       deflate();
-    }*/
+    }
     deflater.reset();
   }
   

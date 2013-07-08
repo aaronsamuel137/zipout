@@ -8,7 +8,7 @@
    There is NO WARRANTY for this software.  See license.txt for
    details. */
 
-package java.util.zip;
+//package java.util.zip;
 
 /**
  * Class ZipEntry:
@@ -93,7 +93,7 @@ public class ZipEntry {
   }
 
   public int getMethod(){
-    return this.compMethod;
+    return this.compressionMethod;
   }
 
   //Methods to set and get the crc for the entry
@@ -170,7 +170,7 @@ public class ZipEntry {
 	  dateBits = dateBits << 4;
 
 	  //Month
-      int month = 0xf & ((modCalendar.get(MONTH)) + 1);
+    int month = 0xf & ((modCalendar.get(MONTH)) + 1);
 	  dateBits = dateBits ^ month;
 	  dateBits = dateBits << 5;
 	  
@@ -179,7 +179,8 @@ public class ZipEntry {
 	  dateBits = dateBits ^ dayBits;
 	  
 	  //Store Date
-    modTimeDate = (timeBits << 16) ^ dateBits;
+    int storeDate = ((dateBits << 16) ^ (timeBits));
+    return storeDate;
   }
 
   //Methods to set and get the uncompressed size of the entry
@@ -188,7 +189,7 @@ public class ZipEntry {
       return;
     }
     else
-      umcompSize = size;
+      uncompSize = size;
   }
 
   public int getSize() {
